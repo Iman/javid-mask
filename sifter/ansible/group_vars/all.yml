@@ -1,0 +1,64 @@
+pi_user: admin
+pi_hostname: sifter
+
+pi_static_ip: 10.0.0.242
+pi_gateway: 10.0.0.1
+pi_dns_upstream: 127.0.0.1#5053
+
+router_network: 10.0.0.0/24
+router_gateway: 10.0.0.1
+
+cloudflared_enabled: true
+cloudflared_upstream_dns:
+  - "https://1.1.1.1/dns-query"
+  - "https://1.0.0.1/dns-query"
+cloudflared_port: 5053
+
+pihole_enabled: true
+pihole_web_password: "changeme"
+pihole_dnssec_enabled: true
+pihole_rate_limit: "1000/60"
+pihole_privacy_level: 0
+
+pihole_blocklists:
+  - name: "StevenBlack Unified"
+    url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+    comment: "Unified hosts (adware + malware)"
+  - name: "EasyPrivacy"
+    url: "https://v.firebog.net/hosts/Easyprivacy.txt"
+    comment: "EasyPrivacy tracking protection"
+  - name: "Prigent Ads"
+    url: "https://v.firebog.net/hosts/Prigent-Ads.txt"
+    comment: "Prigent advertising domains"
+  - name: "AdGuard DNS"
+    url: "https://v.firebog.net/hosts/AdguardDNS.txt"
+    comment: "AdGuard DNS filter"
+  - name: "Phishing Army"
+    url: "https://phishing.army/download/phishing_army_blocklist.txt"
+    comment: "Phishing domains"
+  - name: "Malware Domains"
+    url: "https://v.firebog.net/hosts/Prigent-Malware.txt"
+    comment: "Malware domains"
+  - name: "CoinBlocker"
+    url: "https://zerodot1.gitlab.io/CoinBlockerLists/hosts"
+    comment: "Cryptocurrency miners"
+
+iranian_domain_sources:
+  - name: "bootmortis Iranian Domains"
+    url: "https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/domains.txt"
+    comment: "Iranian Domains (131K+) - Identity Protection"
+  - name: "liketolivefree Iranian Domains"
+    url: "https://raw.githubusercontent.com/liketolivefree/iran_domain-ip/main/domains.txt"
+    comment: "Additional Iranian domains"
+
+iranian_ip_sources:
+  - "https://raw.githubusercontent.com/herrbischoff/country-ip-blocks/master/ipv4/ir.cidr"
+
+block_iranian_ips: true
+block_iranian_domains: true
+ipv6_disabled: true
+
+alert_enabled: true
+alert_log_path: /var/log/sifter
+alert_ntfy_enabled: false
+alert_ntfy_topic: "sifter-alerts"

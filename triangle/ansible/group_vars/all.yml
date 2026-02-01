@@ -1,0 +1,196 @@
+---
+# Triangle Architecture Configuration
+# VPS Proxy + Local Pi-hole/Firewall/WiFi Gateway
+
+# VPS Configuration
+vps_ip: 206.189.15.223
+vps_hostname: javid-proxy-vps
+vps_interface: eth0
+
+# 3x-UI on VPS (optional - disabled by default, using native WireGuard)
+xui_enabled: false
+xui_port: 2053
+xui_subscription_port: 2096
+xui_admin_username: admin
+xui_admin_password: admin
+xui_install_url: https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh
+xui_health_check_port: 62050
+
+# Raspberry Pi Configuration (Local Gateway)
+pi_ip: 10.0.0.161
+pi_hostname: javid-gateway-pi
+
+# Home Network Configuration (aligned with router)
+home_network: 10.0.0.0/24
+home_gateway: 10.0.0.1
+home_netmask: 255.255.255.0
+
+# WiFi AP Configuration (dedicated subnet for WiFi clients)
+wifi_interface: wlan0
+ethernet_interface: eth0
+wifi_ssid: "TriangleSecure"
+wifi_password: "TestPassword123"
+wifi_channel: 6
+wifi_country_code: GB
+wifi_hw_mode: g
+
+# WiFi uses dedicated subnet (NAT to home network)
+wifi_network: 192.168.4.0/24
+wifi_gateway: 192.168.4.1
+dhcp_range_start: 192.168.4.50
+dhcp_range_end: 192.168.4.150
+dhcp_lease_time: 12h
+
+# Pi-hole DNS Configuration
+pihole_install_dir: /etc/pihole
+pihole_web_port: 80
+pihole_web_password: "{{ lookup('password', '/tmp/.pihole_password chars=ascii_letters,digits length=32') }}"
+pihole_dns_port: 53
+pihole_interface: "{{ wifi_interface }}"
+pihole_ipv4_address: "{{ wifi_gateway }}"
+pihole_cache_size: 10000
+
+# Cloudflared DNS-over-HTTPS (Raspberry Pi)
+cloudflared_enabled: true
+cloudflared_dns_port: 5053
+cloudflared_dns_address: 127.0.0.1
+pihole_upstream_dns_1: 127.0.0.1#5053
+pihole_upstream_dns_2: ""
+
+# Cloudflared on VPS (DNS-over-HTTPS for VPS Pi-hole)
+vps_cloudflared_enabled: true
+vps_cloudflared_dns_port: 5053
+vps_cloudflared_dns_address: 127.0.0.1
+
+# Pi-hole on VPS (for direct WireGuard clients)
+vps_pihole_enabled: true
+vps_pihole_web_password: "{{ lookup('password', '/tmp/.vps_pihole_password chars=ascii_letters,digits length=32') }}"
+vps_pihole_dns_port: 53
+
+# Pi-hole Security
+pihole_dnssec_enabled: true
+pihole_dns_bogus_priv: true
+pihole_dns_fqdn_required: true
+pihole_rate_limit: "1000/60"
+
+# nftables Firewall Configuration
+nftables_enabled: true
+nftables_config_file: /etc/nftables.conf
+block_iranian_ips: true
+enable_nat: true
+
+# Iranian Blocklists
+blocklist_dir: /opt/blocklists
+iranian_ip_sources:
+  - https://raw.githubusercontent.com/Ramtiiin/iran-ip/main/ip.txt
+  - https://raw.githubusercontent.com/mk990/iran-cidr/main/iran.txt
+
+iranian_domain_sources:
+  # bootmortis: 131,576 Iranian domains (comprehensive)
+  - https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/domains.txt
+  # liketolivefree: Additional Iranian domains
+  - https://raw.githubusercontent.com/liketolivefree/iran_domain-ip/main/domains.txt
+
+# Security Blocklists for Pi-hole
+security_blocklists:
+  - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+  - https://v.firebog.net/hosts/Easyprivacy.txt
+  - https://v.firebog.net/hosts/Prigent-Ads.txt
+  - https://blocklistproject.github.io/Lists/phishing.txt
+  - https://blocklistproject.github.io/Lists/tracking.txt
+
+# Health Check & Kill Switch Configuration
+health_check_enabled: true
+health_check_interval: 60
+health_check_timeout: 10
+health_check_failures_threshold: 3
+
+# VPS health check (check if proxy is accessible)
+vps_health_check_url: "http://{{ vps_ip }}:{{ xui_health_check_port }}/health"
+
+# Kill switch: block all traffic if proxy or DNS fails
+kill_switch_enabled: true
+
+# Proxy routing (all traffic through VPS)
+proxy_server: "{{ vps_ip }}"
+proxy_ports:
+  socks5: 1080
+  http: 8080
+  vmess: 443
+  vless: 443
+
+# System Configuration
+enable_ipv6: false
+enable_ip_forwarding: true
+system_timezone: UTC
+
+# Credentials file location
+credentials_file: "{{ playbook_dir }}/../credentials.txt"
+
+# Service Configuration
+services_raspberry_pi:
+  - hostapd
+  - pihole-FTL
+  - cloudflared
+  - nftables
+  - health-check
+
+services_vps:
+  - x-ui
+  - health-endpoint
+
+# Log directories
+log_base_dir: /var/log
+pihole_log_dir: "{{ log_base_dir }}/pihole"
+health_check_log: "{{ log_base_dir }}/health-check.log"
+
+# Deployment options
+skip_package_upgrade: true
+skip_reboot: false
+verbose_output: false
+
+# WireGuard VPN Configuration (Primary Tunnel)
+# Architecture: Mobile -> Pi WiFi -> WireGuard -> VPS -> Internet
+wireguard_enabled: true
+wireguard_port: 56821
+wireguard_network: "10.0.0.0/24"
+wireguard_pi_address: "10.0.0.2/32"
+wireguard_mtu: 1250
+wireguard_dns: "1.1.1.1, 1.0.0.1"
+
+# VPS WireGuard Server Keys
+wireguard_server_private_key: "8PgnYIIv6Nyrq8XiGAZQ2Fu2pcQrLilzPj0rr94yxlk="
+wireguard_server_public_key: "3K6Ro3b322vTkUv2nBviYuQPMQWBzDqhR4yxTOrXNGQ="
+wireguard_server_address: "10.0.0.1/24"
+
+# Pi WireGuard Client Keys (10.0.0.2 - Raspberry Pi Gateway)
+wireguard_pi_private_key: "EJCjxv3pNwhoIoLxGZ27GVgOcldsjgCvVvzR4VU6MVQ="
+wireguard_pi_public_key: "NtiL2kAq/YTeQLh/XMk8dWvM8YeN3/IY7iYrsokw+04="
+wireguard_pi_preshared_key: "seZo5OlTpY6yF7zMPXdRPa1OZ+haEArSjFDYDLgXuYE="
+
+# Direct Client WireGuard Keys (10.0.0.3 - Mobile/Laptop)
+wireguard_direct_address: "10.0.0.3/32"
+wireguard_direct_private_key: "IJC+78msQrdYXzmymK5bddyPzvcqledFUclMp+cf52w="
+wireguard_direct_public_key: "LZTs2BJtfP0jDNcJVgvs9cApEDnCH9i2g1wjyZCW60s="
+wireguard_direct_preshared_key: "ldiPc22KCvoN6tu8ycvpayctc7GtSF0I/Ub6LrLdsM0="
+
+# Legacy variable (kept for compatibility)
+wireguard_preshared_key: "seZo5OlTpY6yF7zMPXdRPa1OZ+haEArSjFDYDLgXuYE="
+
+# Xray Transparent Proxy - DISABLED (using WireGuard only)
+xray_enabled: false
+
+# Xray Client Settings (kept for reference, not used in WireGuard-only mode)
+xray_uuid: "cb16b622-71fc-4b70-8826-5a7630f389fb"
+xray_vless_port: 22703
+xray_network: "tcp"
+xray_security: "reality"
+xray_flow: ""
+xray_encryption: "none"
+
+# Reality Protocol Settings (kept for reference)
+xray_reality_server_name: "www.bing.com"
+xray_reality_fingerprint: "chrome"
+xray_reality_public_key: "Anb7Y5yelJ9jvR0o-UBZNAMOuH9QWtsFuw8MMIfIo0I"
+xray_reality_short_id: "2de676"
+xray_reality_spx: "/"

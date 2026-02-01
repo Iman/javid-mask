@@ -1,0 +1,58 @@
+---
+- name: Check if NetworkManager is installed
+  ansible.builtin.stat:
+    path: /usr/sbin/NetworkManager
+  register: nm_check
+
+- name: Configure static IP via NetworkManager
+  when: nm_check.stat.exists
+  block:
+    - name: Get current connection name
+      ansible.builtin.shell: |
+        nmcli -t -f NAME,DEVICE con show --active | grep eth0 | cut -d: -f1
+      register: nm_connection
+      changed_when: false
+
+    - name: Configure static IP
+      ansible.builtin.shell: |
+        nmcli con mod "{{ nm_connection.stdout }}" \
+          ipv4.method manual \
+          ipv4.addresses {{ pi_static_ip }}/24 \
+          ipv4.gateway {{ pi_gateway }} \
+          ipv4.dns "127.0.0.1"
+      when: nm_connection.stdout != ""
+      notify: Restart NetworkManager
+
+- name: Configure static IP via dhcpcd (fallback)
+  when: not nm_check.stat.exists
+  block:
+    - name: Check if dhcpcd.conf exists
+      ansible.builtin.stat:
+        path: /etc/dhcpcd.conf
+      register: dhcpcd_check
+
+    - name: Configure dhcpcd for static IP
+      ansible.builtin.blockinfile:
+        path: /etc/dhcpcd.conf
+        block: |
+          interface eth0
+          static ip_address={{ pi_static_ip }}/24
+          static routers={{ pi_gateway }}
+          static domain_name_servers=127.0.0.1
+        marker: "# {mark} SIFTER STATIC IP CONFIGURATION"
+        create: yes
+      when: dhcpcd_check.stat.exists
+      notify: Restart dhcpcd
+
+- name: Ensure resolv.conf points to local DNS
+  ansible.builtin.copy:
+    content: |
+      # Sifter DNS configuration
+      # All DNS queries go through Pi-hole
+      nameserver 127.0.0.1
+      options edns0 trust-ad
+    dest: /etc/resolv.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: pihole_enabled | default(true)

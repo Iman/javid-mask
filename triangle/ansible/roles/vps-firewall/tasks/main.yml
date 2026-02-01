@@ -1,0 +1,119 @@
+---
+- name: Install ipset and iptables-persistent
+  apt:
+    name:
+      - ipset
+      - iptables-persistent
+    state: present
+
+- name: Create blocklists directory
+  file:
+    path: /opt/blocklists
+    state: directory
+    mode: '0755'
+
+- name: Copy Iranian IP blocklist
+  copy:
+    src: "{{ playbook_dir }}/files/iranian-ips.txt"
+    dest: /opt/blocklists/iranian-ips.txt
+    mode: '0644'
+
+- name: Clean Iranian IP list (remove comments and empty lines)
+  shell: |
+    grep -E '^[0-9]' /opt/blocklists/iranian-ips.txt | grep -E '^([0-9]{1,3}\.){3}[0-9]{1,3}(/[0-9]{1,2})?' > /opt/blocklists/iranian-ips-clean.txt
+  changed_when: false
+
+- name: Destroy existing ipset if exists
+  shell: |
+    ipset destroy iranian_block 2>/dev/null || true
+  changed_when: false
+
+- name: Create ipset for Iranian IPs
+  shell: |
+    ipset create iranian_block hash:net hashsize 4096 maxelem 10000
+  changed_when: false
+
+- name: Load Iranian IPs into ipset
+  shell: |
+    while read -r cidr; do
+      ipset add iranian_block "$cidr" 2>/dev/null || true
+    done < /opt/blocklists/iranian-ips-clean.txt
+  changed_when: false
+
+- name: Block incoming traffic from Iranian IPs
+  shell: |
+    iptables -C INPUT -m set --match-set iranian_block src -j DROP 2>/dev/null || \
+    iptables -I INPUT 1 -m set --match-set iranian_block src -j DROP
+  changed_when: false
+
+- name: Block outgoing traffic to Iranian IPs
+  shell: |
+    iptables -C OUTPUT -m set --match-set iranian_block dst -j DROP 2>/dev/null || \
+    iptables -I OUTPUT 1 -m set --match-set iranian_block dst -j DROP
+  changed_when: false
+
+- name: Block forwarded traffic from/to Iranian IPs
+  shell: |
+    iptables -C FORWARD -m set --match-set iranian_block src -j DROP 2>/dev/null || \
+    iptables -I FORWARD 1 -m set --match-set iranian_block src -j DROP
+    iptables -C FORWARD -m set --match-set iranian_block dst -j DROP 2>/dev/null || \
+    iptables -I FORWARD 2 -m set --match-set iranian_block dst -j DROP
+  changed_when: false
+
+- name: Save ipset configuration
+  shell: ipset save > /etc/ipset.conf
+  changed_when: false
+
+- name: Save iptables rules
+  shell: iptables-save > /etc/iptables/rules.v4
+  changed_when: false
+
+- name: Create ipset restore service
+  copy:
+    dest: /etc/systemd/system/ipset-restore.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Restore ipset rules
+      Before=netfilter-persistent.service
+
+      [Service]
+      Type=oneshot
+      ExecStart=/sbin/ipset restore -f /etc/ipset.conf
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable ipset restore service
+  systemd:
+    name: ipset-restore
+    enabled: yes
+    daemon_reload: yes
+
+- name: Create firewall update script
+  copy:
+    dest: /usr/local/bin/update-iranian-blocklist.sh
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      cd /opt/blocklists
+      wget -q -O iranian-ips-new.txt https://raw.githubusercontent.com/herrbischoff/country-ip-blocks/master/ipv4/ir.cidr
+      if [ -s iranian-ips-new.txt ]; then
+        grep -E '^[0-9]' iranian-ips-new.txt > iranian-ips-clean-new.txt
+        ipset flush iranian_block
+        while read -r cidr; do
+          ipset add iranian_block "$cidr" 2>/dev/null || true
+        done < iranian-ips-clean-new.txt
+        ipset save > /etc/ipset.conf
+        echo "$(date): Iranian IP blocklist updated" >> /var/log/firewall-update.log
+      fi
+
+- name: Create weekly cron job for blocklist updates
+  cron:
+    name: "Update Iranian IP blocklist"
+    minute: "0"
+    hour: "4"
+    weekday: "0"
+    job: "/usr/local/bin/update-iranian-blocklist.sh > /dev/null 2>&1"
+    user: root

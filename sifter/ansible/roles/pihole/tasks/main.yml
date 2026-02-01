@@ -1,0 +1,128 @@
+---
+- name: Check if Pi-hole is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/pihole
+  register: pihole_installed
+
+- name: Create Pi-hole configuration directory
+  ansible.builtin.file:
+    path: /etc/pihole
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create Pi-hole setupVars.conf
+  ansible.builtin.template:
+    src: setupVars.conf.j2
+    dest: /etc/pihole/setupVars.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Download Pi-hole installer
+  ansible.builtin.get_url:
+    url: https://install.pi-hole.net
+    dest: /tmp/pihole-install.sh
+    mode: '0755'
+  when: not pihole_installed.stat.exists
+
+- name: Install Pi-hole (unattended)
+  ansible.builtin.command: bash /tmp/pihole-install.sh --unattended
+  when: not pihole_installed.stat.exists
+  notify: Restart pihole-FTL
+
+- name: Clean up installer
+  ansible.builtin.file:
+    path: /tmp/pihole-install.sh
+    state: absent
+
+- name: Set Pi-hole web password
+  ansible.builtin.command: pihole -a -p "{{ pihole_web_password }}"
+  changed_when: false
+  no_log: true
+
+- name: Configure Pi-hole to use Cloudflared as upstream
+  ansible.builtin.lineinfile:
+    path: /etc/pihole/setupVars.conf
+    regexp: '^PIHOLE_DNS_'
+    state: absent
+  notify: Restart pihole-FTL
+
+- name: Set Cloudflared as upstream DNS
+  ansible.builtin.blockinfile:
+    path: /etc/pihole/setupVars.conf
+    block: |
+      PIHOLE_DNS_1=127.0.0.1#{{ cloudflared_port }}
+    marker: "# {mark} SIFTER UPSTREAM DNS"
+  notify: Restart pihole-FTL
+
+- name: Configure Pi-hole custom settings
+  ansible.builtin.lineinfile:
+    path: /etc/pihole/pihole-FTL.conf
+    regexp: "^{{ item.key }}="
+    line: "{{ item.key }}={{ item.value }}"
+    create: yes
+  loop:
+    - { key: 'RATE_LIMIT', value: '{{ pihole_rate_limit }}' }
+    - { key: 'PRIVACYLEVEL', value: '{{ pihole_privacy_level }}' }
+    - { key: 'DNSSEC', value: '{{ "true" if pihole_dnssec_enabled else "false" }}' }
+    - { key: 'BLOCKINGMODE', value: 'NULL' }
+    - { key: 'BLOCK_IPV6', value: 'true' }
+  notify: Restart pihole-FTL
+
+- name: Add standard blocklists to Pi-hole database
+  ansible.builtin.shell: |
+    sqlite3 /etc/pihole/gravity.db "INSERT OR IGNORE INTO adlist (address, enabled, comment) VALUES ('{{ item.url }}', 1, '{{ item.comment }}');"
+  loop: "{{ pihole_blocklists }}"
+  changed_when: false
+
+- name: Add Iranian domain blocklists to Pi-hole database
+  ansible.builtin.shell: |
+    sqlite3 /etc/pihole/gravity.db "INSERT OR IGNORE INTO adlist (address, enabled, comment) VALUES ('{{ item.url }}', 1, '{{ item.comment }}');"
+  loop: "{{ iranian_domain_sources }}"
+  when: block_iranian_domains | default(true)
+  changed_when: false
+
+- name: Create custom Iranian TLD blocklist
+  ansible.builtin.copy:
+    content: |
+      # Sifter: Block Iranian TLDs and subdomains
+      # This catches any .ir domain not in the main blocklist
+
+      # Block entire .ir TLD (regex)
+      (^|\.)ir$
+
+      # Block common Iranian second-level domains
+      (^|\.)co\.ir$
+      (^|\.)ac\.ir$
+      (^|\.)gov\.ir$
+      (^|\.)net\.ir$
+      (^|\.)org\.ir$
+      (^|\.)sch\.ir$
+      (^|\.)id\.ir$
+    dest: /etc/pihole/regex.list
+    owner: root
+    group: root
+    mode: '0644'
+  when: block_iranian_domains | default(true)
+  notify: Update Pi-hole gravity
+
+- name: Update Pi-hole gravity database
+  ansible.builtin.command: pihole -g
+  register: gravity_update
+  changed_when: "'database rebuild' in gravity_update.stdout"
+  async: 600
+  poll: 30
+
+- name: Ensure pihole-FTL is enabled and running
+  ansible.builtin.systemd:
+    name: pihole-FTL
+    enabled: yes
+    state: started
+
+- name: Verify Pi-hole is responding
+  ansible.builtin.command: dig @127.0.0.1 pi.hole +short
+  register: pihole_test
+  changed_when: false
+  failed_when: false

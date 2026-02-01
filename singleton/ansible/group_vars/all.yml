@@ -1,0 +1,285 @@
+# MIT License
+# Copyright (c) 2026 Iman Samizadeh
+# See LICENSE file in the project root for full license text.
+
+---
+# ===============================================
+# CENTRAL CONFIGURATION FILE
+# All Ansible variables for Raspberry Pi WiFi Proxy
+# ===============================================
+
+# ===============================================
+# NETWORK INTERFACES
+# ===============================================
+wifi_interface: wlan0
+ethernet_interface: eth0
+tun_interface: tun0
+
+# ===============================================
+# WIFI ACCESS POINT CONFIGURATION
+# ===============================================
+# WiFi network uses 10.50.0.0/24 to avoid 192.168.x.x range
+wifi_ssid: "SecureProxy-{{ lookup('password', '/dev/null chars=ascii_letters length=8') }}"
+wifi_password: "{{ lookup('password', '/tmp/.wifi_password chars=ascii_letters,digits length=24') }}"
+wifi_channel: 6
+wifi_country_code: GB
+wifi_hw_mode: g
+
+# WiFi Network Configuration (10.50.0.0/24)
+wifi_network: 10.50.0.0/24
+wifi_gateway: 10.50.0.1
+wifi_netmask: 255.255.255.0
+wifi_broadcast: 10.50.0.255
+
+# DHCP Configuration
+dhcp_range_start: 10.50.0.10
+dhcp_range_end: 10.50.0.250
+dhcp_start: 10.50.0.10
+dhcp_end: 10.50.0.250
+dhcp_lease_time: 12h
+
+# ===============================================
+# ROUTER/UPSTREAM NETWORK CONFIGURATION
+# ===============================================
+# Your router's network (10.0.0.0/24)
+router_network: 10.0.0.0/24
+router_gateway: 10.0.0.1
+router_ip_pool_start: 10.0.0.2
+upstream_dns_primary: 1.1.1.1
+upstream_dns_secondary: 1.0.0.1
+
+# ===============================================
+# SING-BOX PROXY CONFIGURATION
+# ===============================================
+sing_box_version: "1.8.0"
+sing_box_install_dir: /opt/singbox
+sing_box_config_file: "{{ sing_box_install_dir }}/config.json"
+sing_box_binary: /usr/local/bin/sing-box
+sing_box_log_dir: /var/log/proxy
+
+# Sing-box Ports
+sing_box_port: 1080          # SOCKS5
+sing_box_http_port: 8080     # HTTP
+sing_box_mixed_port: 7890    # Mixed (SOCKS5 + HTTP)
+sing_box_listen_address: "0.0.0.0"  # Listen on all interfaces
+
+# Sing-box TUN Interface
+sing_box_tun_enabled: true
+sing_box_tun_address: 172.19.0.1/30
+sing_box_tun_name: tun0
+
+# ===============================================
+# PI-HOLE DNS CONFIGURATION
+# ===============================================
+pihole_install_dir: /etc/pihole
+pihole_web_port: 80
+pihole_web_password: "{{ lookup('password', '/tmp/.pihole_password chars=ascii_letters,digits length=32') }}"
+pihole_dns_port: 53
+pihole_interface: "{{ wifi_interface }}"
+pihole_ipv4_address: "{{ wifi_gateway }}"
+pihole_cache_size: 10000
+
+# Pi-hole Upstream DNS (will use cloudflared)
+pihole_upstream_dns_1: 127.0.0.1#5053  # Cloudflared (DNS-over-HTTPS)
+pihole_upstream_dns_2: ""
+
+# Pi-hole Security Settings
+pihole_dnssec_enabled: true
+pihole_conditional_forwarding: false
+pihole_dns_bogus_priv: true
+pihole_dns_fqdn_required: true
+pihole_rate_limit: "1000/60"
+pihole_blocking_mode: "IP"
+pihole_query_logging: true
+
+# ===============================================
+# CLOUDFLARED (DNS-OVER-HTTPS) CONFIGURATION
+# ===============================================
+cloudflared_enabled: true
+cloudflared_version: latest
+cloudflared_install_dir: /usr/local/bin
+cloudflared_config_dir: /etc/cloudflared
+cloudflared_user: cloudflared
+
+# Cloudflared DNS Settings
+cloudflared_dns_port: 5053
+cloudflared_dns_address: 127.0.0.1
+cloudflared_metrics_port: 8099
+
+# Cloudflared Upstream DNS-over-HTTPS Servers
+cloudflared_upstream_dns:
+  - https://1.1.1.1/dns-query
+  - https://1.0.0.1/dns-query
+  - https://2606:4700:4700::1111/dns-query
+  - https://2606:4700:4700::1001/dns-query
+
+# ===============================================
+# 3X-UI MANAGEMENT PANEL CONFIGURATION
+# ===============================================
+xui_enabled: true
+xui_port: 2053
+xui_subscription_port: 2096
+xui_admin_username: admin
+xui_admin_password: "{{ lookup('password', '/tmp/.xui_password chars=ascii_letters,digits length=16') }}"
+xui_install_url: https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh
+
+# ===============================================
+# FIREWALL (NFTABLES) CONFIGURATION
+# ===============================================
+nftables_enabled: true
+nftables_config_file: /etc/nftables.conf
+
+# Firewall Features
+block_iranian_ips: true
+block_iranian_domains: true
+enable_nat: true
+enable_port_forwarding: true
+enable_dns_security: true
+
+# ===============================================
+# IRANIAN BLOCKLIST SOURCES
+# ===============================================
+iranian_ip_sources:
+  - https://raw.githubusercontent.com/Ramtiiin/iran-ip/main/ip.txt
+  - https://raw.githubusercontent.com/mk990/iran-cidr/main/iran.txt
+  - https://raw.githubusercontent.com/peymanhr/ipset/main/iran.txt
+  - https://raw.githubusercontent.com/afsharsafavi/Firewall_CIDR/main/IR.txt
+  - https://raw.githubusercontent.com/payam124/iran-ip/main/iran-ip.txt
+
+iranian_domain_sources:
+  # bootmortis: 131,576 Iranian domains (comprehensive)
+  - https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/domains.txt
+  # liketolivefree: Additional Iranian domains
+  - https://raw.githubusercontent.com/liketolivefree/iran_domain-ip/main/domains.txt
+
+blocklist_dir: /opt/blocklists
+
+# ===============================================
+# SECURITY BLOCKLISTS (PI-HOLE)
+# ===============================================
+security_blocklists:
+  - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+  - https://mirror1.malwaredomains.com/files/justdomains
+  - https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt
+  - https://v.firebog.net/hosts/Easyprivacy.txt
+  - https://v.firebog.net/hosts/Prigent-Ads.txt
+  - https://phishing.army/download/phishing_army_blocklist_extended.txt
+  - https://phishing.army/download/phishing_army_blocklist.txt
+  - https://raw.githubusercontent.com/Spam404/lists/master/main-blacklist.txt
+  - https://zerodot1.gitlab.io/CoinBlockerLists/hosts_browser
+  - https://v.firebog.net/hosts/static/w3kbl.txt
+  - https://raw.githubusercontent.com/kboghdady/youTube_ads_4_pi-hole/master/crowed_list.txt
+  - https://blocklistproject.github.io/Lists/phishing.txt
+  - https://blocklistproject.github.io/Lists/porn.txt
+  - https://blocklistproject.github.io/Lists/redirect.txt
+  - https://blocklistproject.github.io/Lists/tiktok.txt
+  - https://blocklistproject.github.io/Lists/tracking.txt
+  - https://blocklistproject.github.io/Lists/abuse.txt
+  - https://blocklistproject.github.io/Lists/ads.txt
+
+# ===============================================
+# DNS SECURITY CONFIGURATION
+# ===============================================
+dns_security_enabled: true
+dns_leak_prevention: true
+dnssec_enabled: true
+dns_over_https_enabled: true
+
+# DNS Security Features
+dns_rate_limiting: true
+dns_rebind_protection: true
+dns_amplification_protection: true
+dns_privacy_mode: true
+
+# ===============================================
+# SYSTEM CONFIGURATION
+# ===============================================
+enable_ipv6: false
+enable_ip_forwarding: true
+system_timezone: UTC
+
+# Log Directories
+log_base_dir: /var/log
+pihole_log_dir: "{{ log_base_dir }}/pihole"
+singbox_log_dir: "{{ log_base_dir }}/proxy"
+cloudflared_log_dir: "{{ log_base_dir }}/cloudflared"
+
+# ===============================================
+# CREDENTIALS AND PATHS
+# ===============================================
+credentials_file: "{{ playbook_dir }}/../credentials.txt"
+deployment_summary_file: "{{ playbook_dir }}/../DEPLOYMENT-COMPLETE.md"
+
+# Temporary Files (on Raspberry Pi)
+temp_dir: /tmp
+wifi_password_file: "{{ temp_dir }}/.wifi_password"
+pihole_password_file: "{{ temp_dir }}/.pihole_password"
+xui_credentials_file: "{{ temp_dir }}/.xui_credentials"
+dns_security_info_file: "{{ temp_dir }}/.dns_security_info"
+
+# ===============================================
+# WEB INTERFACE URLS
+# ===============================================
+# These are dynamically generated based on wifi_gateway
+pihole_web_url_wifi: "http://{{ wifi_gateway }}/admin"
+pihole_web_url_lan: "http://{{ ansible_host }}/admin"
+
+xui_web_url_wifi: "http://{{ wifi_gateway }}:{{ xui_port }}/"
+xui_web_url_lan: "http://{{ ansible_host }}:{{ xui_port }}/"
+
+xui_subscription_url_wifi: "http://{{ wifi_gateway }}:{{ xui_subscription_port }}/sub/"
+xui_subscription_url_lan: "http://{{ ansible_host }}:{{ xui_subscription_port }}/sub/"
+
+# ===============================================
+# SERVICE CONFIGURATION
+# ===============================================
+services_to_enable:
+  - hostapd
+  - pihole-FTL
+  - sing-box
+  - nftables
+  - cloudflared
+  - x-ui
+
+# ===============================================
+# DEPLOYMENT OPTIONS
+# ===============================================
+skip_package_upgrade: true
+skip_reboot: false
+verbose_output: false
+
+# ===============================================
+# ANSIBLE CONFIGURATION
+# ===============================================
+ansible_python_interpreter: /usr/bin/python3
+ansible_become_method: sudo
+
+# ===============================================
+# NETWORK TESTING URLS
+# ===============================================
+test_urls:
+  dns_leak_test: https://dnsleaktest.com
+  dnssec_test: https://dnssec.vs.uni-due.de
+  doh_test: https://1.1.1.1/help
+  ip_check: https://ifconfig.me
+
+# ===============================================
+# DOCUMENTATION
+# ===============================================
+# This configuration file centralizes all variables
+# used across all Ansible roles and playbooks.
+#
+# Network Design:
+#   - LAN Network:  10.0.0.0/24 (your router)
+#   - WiFi Network: 10.50.0.0/24 (Raspberry Pi AP)
+#
+# Services:
+#   - WiFi AP: 10.50.0.1 (hostapd)
+#   - DNS: 10.50.0.1:53 (Pi-hole + cloudflared)
+#   - Proxy: 10.50.0.1:1080/8080/7890 (sing-box)
+#   - Web Admin: 10.50.0.1:80 (Pi-hole)
+#   - Management: 10.50.0.1:2053 (3x-UI)
+#
+# To modify any setting, edit this file and re-run:
+#   ansible-playbook -i inventory.yml playbook.yml
+# ===============================================

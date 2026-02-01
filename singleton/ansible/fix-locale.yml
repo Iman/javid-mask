@@ -1,0 +1,33 @@
+---
+- name: Fix locale settings on Raspberry Pi
+  hosts: raspberry_pi
+  become: yes
+  tasks:
+    - name: Generate en_US.UTF-8 locale
+      locale_gen:
+        name: en_US.UTF-8
+        state: present
+
+    - name: Set default locale to en_US.UTF-8
+      lineinfile:
+        path: /etc/default/locale
+        regexp: '^LC_ALL='
+        line: 'LC_ALL=en_US.UTF-8'
+        create: yes
+        mode: '0644'
+
+    - name: Update locale environment
+      lineinfile:
+        path: /etc/environment
+        regexp: '^LC_ALL='
+        line: 'LC_ALL=en_US.UTF-8'
+        create: yes
+        mode: '0644'
+
+    - name: Reconfigure locales
+      command: dpkg-reconfigure -f noninteractive locales
+      changed_when: false
+
+    - name: Display locale fix completion
+      debug:
+        msg: "Locale fixed. Log out and log back in for changes to take effect."

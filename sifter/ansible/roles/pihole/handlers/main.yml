@@ -1,0 +1,10 @@
+---
+- name: Restart pihole-FTL
+  ansible.builtin.systemd:
+    name: pihole-FTL
+    state: restarted
+
+- name: Update Pi-hole gravity
+  ansible.builtin.command: pihole -g
+  async: 600
+  poll: 30

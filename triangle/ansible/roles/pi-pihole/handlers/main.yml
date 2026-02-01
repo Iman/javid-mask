@@ -1,0 +1,20 @@
+---
+- name: restart pihole
+  systemd:
+    name: pihole-FTL
+    state: restarted
+
+- name: update gravity
+  command: pihole -g
+  changed_when: false
+  ignore_errors: yes
+
+- name: restart cloudflared
+  systemd:
+    name: cloudflared
+    state: restarted
+
+- name: restart dnsmasq
+  systemd:
+    name: pihole-FTL
+    state: restarted

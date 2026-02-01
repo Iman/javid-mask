@@ -1,0 +1,116 @@
+---
+- name: Check if s-ui is already installed
+  stat:
+    path: /usr/local/s-ui/s-ui
+  register: sui_installed
+
+- name: Download and install s-ui
+  shell: |
+    bash <(curl -Ls https://raw.githubusercontent.com/alireza0/s-ui/master/install.sh)
+  args:
+    executable: /bin/bash
+  when: not sui_installed.stat.exists
+  register: sui_install
+  changed_when: "'Installation completed' in sui_install.stdout or 'successfully' in sui_install.stdout"
+
+- name: Wait for s-ui installation to complete
+  wait_for:
+    timeout: 30
+  when: sui_install.changed
+
+- name: Check if s-ui service exists
+  stat:
+    path: /etc/systemd/system/s-ui.service
+  register: sui_service_file
+
+- name: Enable s-ui service
+  systemd:
+    name: s-ui
+    enabled: yes
+    daemon_reload: yes
+  when: sui_service_file.stat.exists
+
+- name: Start s-ui service
+  systemd:
+    name: s-ui
+    state: started
+  when: sui_service_file.stat.exists
+  register: sui_started
+  ignore_errors: yes
+
+- name: Wait for s-ui web interface to be ready
+  wait_for:
+    port: 2095
+    delay: 5
+    timeout: 60
+  when: sui_started is succeeded
+  ignore_errors: yes
+
+- name: Check s-ui status
+  systemd:
+    name: s-ui
+  register: sui_status
+  when: sui_service_file.stat.exists
+  ignore_errors: yes
+
+- name: Display s-ui installation result
+  debug:
+    msg:
+      - "S-UI Installation Status: {{ 'Installed' if sui_installed.stat.exists or sui_install.changed else 'Failed' }}"
+      - "S-UI Web Panel: http://{{ wifi_gateway }}:2095/app/"
+      - "Default Username: admin"
+      - "Default Password: admin"
+      - "IMPORTANT: Change default password after first login!"
+  when: sui_installed.stat.exists or sui_install.changed
+
+- name: Create s-ui credentials reminder
+  copy:
+    dest: /tmp/.sui_credentials
+    content: |
+      S-UI Web Panel
+      URL: http://{{ wifi_gateway }}:2095/app/
+      Default Username: admin
+      Default Password: admin
+
+      IMPORTANT: Change the default password immediately after first login!
+
+      To manage s-ui:
+        s-ui start   - Start s-ui
+        s-ui stop    - Stop s-ui
+        s-ui restart - Restart s-ui
+        s-ui status  - Check status
+        s-ui update  - Update to latest version
+        s-ui uninstall - Remove s-ui
+    mode: '0644'
+  when: sui_installed.stat.exists or sui_install.changed
+
+- name: Configure firewall for s-ui
+  blockinfile:
+    path: /etc/nftables.conf
+    marker: "# {mark} S-UI MANAGED BLOCK"
+    insertbefore: "^}"
+    block: |
+      # Allow s-ui web panel
+      iif "{{ wifi_interface }}" tcp dport 2095 accept
+      iif "{{ ethernet_interface }}" tcp dport 2095 accept
+
+      # Allow s-ui subscription service
+      iif "{{ wifi_interface }}" tcp dport 2096 accept
+      iif "{{ ethernet_interface }}" tcp dport 2096 accept
+  notify: Reload nftables
+  when: sui_installed.stat.exists or sui_install.changed
+
+- name: Save s-ui access information
+  lineinfile:
+    path: "{{ credentials_file }}"
+    line: |
+
+      S-UI Management Panel:
+      URL: http://{{ wifi_gateway }}:2095/app/
+      Username: admin
+      Password: admin (CHANGE IMMEDIATELY!)
+    insertafter: EOF
+  delegate_to: localhost
+  run_once: true
+  become: no
+  when: sui_installed.stat.exists or sui_install.changed

@@ -1,0 +1,61 @@
+---
+- name: Install WireGuard
+  apt:
+    name:
+      - wireguard
+      - wireguard-tools
+    state: present
+
+- name: Create WireGuard directory
+  file:
+    path: /etc/wireguard
+    state: directory
+    mode: '0700'
+
+- name: Install openresolv for DNS management
+  apt:
+    name: openresolv
+    state: present
+  ignore_errors: yes
+
+- name: Create WireGuard client configuration
+  copy:
+    dest: /etc/wireguard/wg0.conf
+    mode: '0600'
+    content: |
+      [Interface]
+      PrivateKey = {{ wireguard_pi_private_key }}
+      Address = {{ wireguard_pi_address }}
+      DNS = {{ wireguard_dns }}
+      MTU = {{ wireguard_mtu | default(1280) }}
+
+      PostUp = sysctl -w net.ipv4.ip_forward=1
+      PostUp = ip rule add from {{ wifi_network }} table 51820 priority 100 || true
+
+      PostDown = ip rule del from {{ wifi_network }} table 51820 priority 100 || true
+
+      [Peer]
+      PublicKey = {{ wireguard_server_public_key }}
+      AllowedIPs = 0.0.0.0/0
+      Endpoint = {{ vps_ip }}:{{ wireguard_port }}
+      PresharedKey = {{ wireguard_pi_preshared_key }}
+      PersistentKeepalive = 25
+  notify: restart wireguard
+
+- name: Enable WireGuard service
+  systemd:
+    name: wg-quick@wg0
+    enabled: yes
+    daemon_reload: yes
+
+- name: Start WireGuard service
+  systemd:
+    name: wg-quick@wg0
+    state: started
+  register: wg_start
+  ignore_errors: yes
+
+- name: Debug WireGuard if failed
+  debug:
+    msg: "WireGuard start failed - check configuration and VPS connectivity"
+  when: wg_start.failed | default(false)

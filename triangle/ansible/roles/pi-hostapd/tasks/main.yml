@@ -1,0 +1,105 @@
+---
+- name: Stop dnsmasq (will use Pi-hole DHCP instead)
+  systemd:
+    name: dnsmasq
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+
+- name: Prevent NetworkManager from managing WiFi interface
+  copy:
+    dest: /etc/NetworkManager/conf.d/unmanaged-wlan0.conf
+    content: |
+      [keyfile]
+      unmanaged-devices=interface-name:{{ wifi_interface }}
+    mode: '0644'
+  ignore_errors: yes
+
+- name: Restart NetworkManager if present
+  systemd:
+    name: NetworkManager
+    state: restarted
+  ignore_errors: yes
+
+- name: Unblock WiFi with rfkill
+  command: rfkill unblock wifi
+  changed_when: false
+
+- name: Ensure wlan0-setup service is started
+  systemd:
+    name: wlan0-setup
+    state: started
+  ignore_errors: yes
+
+- name: Wait for wlan0 to be ready
+  pause:
+    seconds: 3
+
+- name: Create hostapd directory
+  file:
+    path: /etc/hostapd
+    state: directory
+    mode: '0755'
+
+- name: Configure hostapd
+  template:
+    src: hostapd.conf.j2
+    dest: /etc/hostapd/hostapd.conf
+    mode: '0600'
+  notify: restart hostapd
+
+- name: Set hostapd config path
+  lineinfile:
+    path: /etc/default/hostapd
+    regexp: '^#?DAEMON_CONF='
+    line: 'DAEMON_CONF="/etc/hostapd/hostapd.conf"'
+    create: yes
+    mode: '0644'
+
+- name: Create hostapd service override directory
+  file:
+    path: /etc/systemd/system/hostapd.service.d
+    state: directory
+    mode: '0755'
+
+- name: Create hostapd service override for dependencies
+  copy:
+    dest: /etc/systemd/system/hostapd.service.d/override.conf
+    mode: '0644'
+    content: |
+      [Unit]
+      After=wlan0-setup.service
+      Requires=wlan0-setup.service
+
+- name: Unmask hostapd service
+  systemd:
+    name: hostapd
+    masked: no
+    daemon_reload: yes
+
+- name: Enable hostapd
+  systemd:
+    name: hostapd
+    enabled: yes
+
+- name: Start hostapd
+  systemd:
+    name: hostapd
+    state: started
+  register: hostapd_start
+  ignore_errors: yes
+
+- name: Debug hostapd if failed
+  debug:
+    msg: "hostapd start result: {{ hostapd_start }}"
+  when: hostapd_start.failed | default(false)
+
+- name: Save WiFi credentials
+  copy:
+    dest: /tmp/.wifi_credentials
+    content: |
+      WiFi SSID: {{ wifi_ssid }}
+      WiFi Password: {{ wifi_password }}
+      Gateway: {{ wifi_gateway }}
+      DHCP Range: {{ dhcp_range_start }} - {{ dhcp_range_end }}
+    mode: '0600'

@@ -1,0 +1,43 @@
+---
+- name: Install dhcpcd5
+  apt:
+    name: dhcpcd5
+    state: present
+
+- name: Configure static IP for WiFi interface
+  blockinfile:
+    path: /etc/dhcpcd.conf
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - WiFi AP"
+    block: |
+      interface {{ wifi_interface }}
+      static ip_address={{ wifi_gateway }}/24
+      nohook wpa_supplicant
+    create: yes
+    mode: '0644'
+  notify: restart dhcpcd
+
+- name: Ensure ethernet interface gets IP from router
+  blockinfile:
+    path: /etc/dhcpcd.conf
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - Ethernet"
+    block: |
+      interface {{ ethernet_interface }}
+      static domain_name_servers={{ upstream_dns_primary }}
+    create: yes
+    mode: '0644'
+  notify: restart dhcpcd
+
+- name: Stop conflicting services
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  loop:
+    - wpa_supplicant
+    - NetworkManager
+  ignore_errors: yes
+
+- name: Bring up WiFi interface
+  command: ip link set {{ wifi_interface }} up
+  changed_when: false
+  ignore_errors: yes

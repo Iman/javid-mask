@@ -1,0 +1,238 @@
+---
+- name: Check if Pi-hole is already installed
+  stat:
+    path: /usr/local/bin/pihole
+  register: pihole_installed
+
+- name: Download Pi-hole installer
+  get_url:
+    url: https://install.pi-hole.net
+    dest: /tmp/pihole-install.sh
+    mode: '0755'
+  when: not pihole_installed.stat.exists
+
+- name: Create Pi-hole setup configuration
+  copy:
+    dest: /tmp/setupVars.conf
+    mode: '0644'
+    content: |
+      PIHOLE_INTERFACE={{ wifi_interface }}
+      IPV4_ADDRESS={{ wifi_gateway }}/24
+      IPV6_ADDRESS=
+      QUERY_LOGGING=true
+      INSTALL_WEB_SERVER=true
+      INSTALL_WEB_INTERFACE=true
+      LIGHTTPD_ENABLED=true
+      CACHE_SIZE=10000
+      DNS_FQDN_REQUIRED=true
+      DNS_BOGUS_PRIV=true
+      DNSMASQ_LISTENING=local
+      WEBPASSWORD={{ pihole_web_password | hash('sha256') | hash('sha256') }}
+      BLOCKING_ENABLED=true
+      PIHOLE_DNS_1=1.1.1.1
+      PIHOLE_DNS_2=1.0.0.1
+      PIHOLE_DNS_3=2606:4700:4700::1111
+      PIHOLE_DNS_4=2606:4700:4700::1001
+      DNS_REVERSE_LOOKUPS=false
+  when: not pihole_installed.stat.exists
+
+- name: Install Pi-hole
+  shell: |
+    PIHOLE_SKIP_OS_CHECK=true /tmp/pihole-install.sh --unattended
+  args:
+    creates: /usr/local/bin/pihole
+  when: not pihole_installed.stat.exists
+
+- name: Set Pi-hole web password
+  command: "pihole -a -p {{ pihole_web_password }}"
+  no_log: true
+  changed_when: false
+
+- name: Save Pi-hole password to credentials
+  lineinfile:
+    path: "{{ credentials_file }}"
+    line: |
+
+      Pi-hole Admin Panel:
+      URL: http://{{ wifi_gateway }}/admin
+      Password: {{ pihole_web_password }}
+    insertafter: EOF
+  delegate_to: localhost
+  run_once: true
+  become: no
+
+- name: Download Iranian domain blocklist
+  get_url:
+    url: "{{ item }}"
+    dest: "/opt/blocklists/iranian-domains-{{ ansible_loop.index }}.txt"
+    mode: '0644'
+  loop: "{{ iranian_domain_sources }}"
+  loop_control:
+    extended: yes
+  ignore_errors: yes
+
+- name: Combine Iranian domain blocklists
+  shell: |
+    cat /opt/blocklists/iranian-domains-*.txt | sort -u > /opt/blocklists/iranian-domains-combined.txt
+  args:
+    creates: /opt/blocklists/iranian-domains-combined.txt
+
+- name: Add Iranian domains to Pi-hole blocklist
+  lineinfile:
+    path: /etc/pihole/adlists.list
+    line: "file:///opt/blocklists/iranian-domains-combined.txt"
+    create: yes
+    mode: '0644'
+  notify: update gravity
+
+- name: Add comprehensive security blocklists
+  blockinfile:
+    path: /etc/pihole/adlists.list
+    marker: "# {mark} SECURITY BLOCKLISTS"
+    block: |
+      # Security and privacy blocklists
+
+      # StevenBlack's Unified Hosts (ads + malware)
+      https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+
+      # Malware domains
+      https://mirror1.malwaredomains.com/files/justdomains
+      https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt
+
+      # Tracking and telemetry
+      https://v.firebog.net/hosts/Easyprivacy.txt
+      https://v.firebog.net/hosts/Prigent-Ads.txt
+
+      # Phishing
+      https://phishing.army/download/phishing_army_blocklist_extended.txt
+      https://phishing.army/download/phishing_army_blocklist.txt
+
+      # Ransomware
+      https://raw.githubusercontent.com/Spam404/lists/master/main-blacklist.txt
+
+      # Crypto miners
+      https://zerodot1.gitlab.io/CoinBlockerLists/hosts_browser
+
+      # Smart TV tracking
+      https://v.firebog.net/hosts/static/w3kbl.txt
+
+      # YouTube ads
+      https://raw.githubusercontent.com/kboghdady/youTube_ads_4_pi-hole/master/crowed_list.txt
+
+      # Blocklistproject lists
+      https://blocklistproject.github.io/Lists/phishing.txt
+      https://blocklistproject.github.io/Lists/porn.txt
+      https://blocklistproject.github.io/Lists/redirect.txt
+      https://blocklistproject.github.io/Lists/tiktok.txt
+      https://blocklistproject.github.io/Lists/tracking.txt
+      https://blocklistproject.github.io/Lists/abuse.txt
+      https://blocklistproject.github.io/Lists/ads.txt
+    create: yes
+    mode: '0644'
+  notify: update gravity
+
+- name: Install sqlite3 for database management
+  apt:
+    name: sqlite3
+    state: present
+
+- name: Add blocklists to Pi-hole database (Pi-hole v6)
+  shell: |
+    sqlite3 /etc/pihole/gravity.db << 'EOF'
+    INSERT OR IGNORE INTO adlist (address, enabled, comment) VALUES
+    ("https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/domains.txt", 1, "Iranian Domains (131k+) - Identity Protection"),
+    ("https://raw.githubusercontent.com/liketolivefree/iran_domain-ip/main/domains.txt", 1, "Iranian Domains Additional"),
+    ("https://raw.githubusercontent.com/kboghdady/youTube_ads_4_pi-hole/master/crowed_list.txt", 1, "YouTube ads"),
+    ("https://blocklistproject.github.io/Lists/phishing.txt", 1, "Phishing"),
+    ("https://blocklistproject.github.io/Lists/porn.txt", 1, "Porn"),
+    ("https://blocklistproject.github.io/Lists/redirect.txt", 1, "Redirects"),
+    ("https://blocklistproject.github.io/Lists/tiktok.txt", 1, "TikTok"),
+    ("https://blocklistproject.github.io/Lists/tracking.txt", 1, "Tracking"),
+    ("https://blocklistproject.github.io/Lists/abuse.txt", 1, "Abuse"),
+    ("https://blocklistproject.github.io/Lists/ads.txt", 1, "Ads"),
+    ("https://phishing.army/download/phishing_army_blocklist.txt", 1, "Phishing Army"),
+    ("https://mirror1.malwaredomains.com/files/justdomains", 1, "Malware"),
+    ("https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt", 1, "Malvertising"),
+    ("https://v.firebog.net/hosts/Easyprivacy.txt", 1, "Privacy"),
+    ("https://v.firebog.net/hosts/Prigent-Ads.txt", 1, "Ads"),
+    ("https://phishing.army/download/phishing_army_blocklist_extended.txt", 1, "Phishing Extended"),
+    ("https://raw.githubusercontent.com/Spam404/lists/master/main-blacklist.txt", 1, "Spam"),
+    ("https://zerodot1.gitlab.io/CoinBlockerLists/hosts_browser", 1, "Crypto miners"),
+    ("https://v.firebog.net/hosts/static/w3kbl.txt", 1, "Smart TV tracking");
+    EOF
+  args:
+    executable: /bin/bash
+  changed_when: false
+  notify: update gravity
+
+- name: Copy existing iran_blocklist.txt to Pi-hole
+  copy:
+    src: ../../../../iran_blocklist.txt
+    dest: /opt/blocklists/iran_blocklist.txt
+    mode: '0644'
+
+- name: Update Pi-hole gravity
+  command: pihole -g
+  changed_when: false
+  ignore_errors: yes  # May fail during initial deployment due to DNS not being fully configured
+
+- name: Configure Pi-hole to use cloudflared DNS
+  replace:
+    path: /etc/pihole/pihole.toml
+    regexp: 'upstreams = \[\s*"1\.1\.1\.1",\s*"1\.0\.0\.1"'
+    replace: 'upstreams = [\n    "127.0.0.1#5053"'
+  notify: restart pihole
+
+- name: Remove direct DNS upstreams if cloudflared is enabled
+  lineinfile:
+    path: /etc/pihole/pihole.toml
+    regexp: '^\s*"1\.(1|0)\.0\.1",'
+    state: absent
+  notify: restart pihole
+  when: cloudflared_enabled
+
+- name: Enable Pi-hole DHCP server
+  lineinfile:
+    path: /etc/pihole/pihole.toml
+    regexp: '^  active = '
+    line: '  active = true'
+    insertafter: '^\[dhcp\]'
+    state: present
+  notify: restart pihole
+
+- name: Configure DHCP start address
+  lineinfile:
+    path: /etc/pihole/pihole.toml
+    regexp: '^  start = '
+    line: '  start = "{{ dhcp_start }}"'
+    insertafter: '# Start address of the DHCP address pool'
+    state: present
+  notify: restart pihole
+
+- name: Configure DHCP end address
+  lineinfile:
+    path: /etc/pihole/pihole.toml
+    regexp: '^  end = '
+    line: '  end = "{{ dhcp_end }}"'
+    insertafter: '# End address of the DHCP address pool'
+    state: present
+  notify: restart pihole
+
+- name: Configure DHCP router address
+  lineinfile:
+    path: /etc/pihole/pihole.toml
+    regexp: '^  router = '
+    line: '  router = "{{ wifi_gateway }}"'
+    insertafter: '# Address of the gateway to be used'
+    state: present
+  notify: restart pihole
+
+- name: Enable Pi-hole service
+  systemd:
+    name: pihole-FTL
+    enabled: yes
+    state: started
+
+# NOTE: DNS security hardening moved to separate playbook
+# Run security-hardening.yml AFTER main deployment completes
+# to avoid DNS blocking during installation

@@ -1,0 +1,132 @@
+---
+- name: Check if 3x-ui is already installed
+  stat:
+    path: /usr/local/x-ui/x-ui
+  register: xui_installed
+
+- name: Download and install 3x-ui
+  shell: |
+    curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh -o /tmp/3x-ui-install.sh
+    chmod +x /tmp/3x-ui-install.sh
+    echo -e "y\n\n\n\n\nadmin\n{{ xui_admin_password }}\n{{ xui_port }}\n" | bash /tmp/3x-ui-install.sh
+  args:
+    executable: /bin/bash
+  when: not xui_installed.stat.exists
+  register: xui_install
+  changed_when: "'installation finished' in xui_install.stdout or 'successfully' in xui_install.stdout"
+
+- name: Wait for 3x-ui installation to complete
+  wait_for:
+    timeout: 30
+  when: xui_install.changed
+
+- name: Check if 3x-ui service exists
+  stat:
+    path: /etc/systemd/system/x-ui.service
+  register: xui_service_file
+
+- name: Enable 3x-ui service
+  systemd:
+    name: x-ui
+    enabled: yes
+    daemon_reload: yes
+  when: xui_service_file.stat.exists
+
+- name: Configure DNS in Xray for leak prevention
+  shell: |
+    if [ -f /usr/local/x-ui/bin/config.json ]; then
+      cp /usr/local/x-ui/bin/config.json /usr/local/x-ui/bin/config.json.backup
+      jq '. + {{ lookup("file", "xray-dns-config.json.j2") }}' /usr/local/x-ui/bin/config.json > /tmp/xray-new.json
+      mv /tmp/xray-new.json /usr/local/x-ui/bin/config.json
+      echo "DNS configured"
+    fi
+  args:
+    executable: /bin/bash
+  when: xui_service_file.stat.exists
+  changed_when: false
+
+- name: Start 3x-ui service
+  systemd:
+    name: x-ui
+    state: started
+  when: xui_service_file.stat.exists
+  register: xui_started
+  ignore_errors: yes
+
+- name: Wait for 3x-ui web interface to be ready
+  wait_for:
+    port: "{{ xui_port }}"
+    delay: 5
+    timeout: 60
+  when: xui_started is succeeded
+  ignore_errors: yes
+
+- name: Check 3x-ui status
+  systemd:
+    name: x-ui
+  register: xui_status
+  when: xui_service_file.stat.exists
+  ignore_errors: yes
+
+- name: Display 3x-ui installation result
+  debug:
+    msg:
+      - "3x-UI Installation Status: {{ 'Installed' if xui_installed.stat.exists or xui_install.changed else 'Failed' }}"
+      - "3x-UI Web Panel: http://{{ wifi_gateway }}:{{ xui_port }}/"
+      - "Default Username: admin"
+      - "Default Password: {{ xui_admin_password }}"
+      - "IMPORTANT: Change default password after first login!"
+  when: xui_installed.stat.exists or xui_install.changed
+
+- name: Create 3x-ui credentials reminder
+  copy:
+    dest: /tmp/.xui_credentials
+    content: |
+      3x-UI Web Panel
+      URL: http://{{ wifi_gateway }}:{{ xui_port }}/
+      Default Username: admin
+      Default Password: {{ xui_admin_password }}
+
+      IMPORTANT: Change the default password immediately after first login!
+
+      To manage 3x-ui:
+        x-ui start   - Start 3x-ui
+        x-ui stop    - Stop 3x-ui
+        x-ui restart - Restart 3x-ui
+        x-ui status  - Check status
+        x-ui update  - Update to latest version
+        x-ui uninstall - Remove 3x-ui
+    mode: '0644'
+  when: xui_installed.stat.exists or xui_install.changed
+
+- name: Configure firewall for 3x-ui
+  blockinfile:
+    path: /etc/nftables.conf
+    marker: "# {mark} 3X-UI MANAGED BLOCK"
+    insertbefore: "^}"
+    block: |
+      # Allow 3x-ui web panel
+      iif "{{ wifi_interface }}" tcp dport {{ xui_port }} accept
+      iif "{{ ethernet_interface }}" tcp dport {{ xui_port }} accept
+
+      # Allow 3x-ui subscription service
+      iif "{{ wifi_interface }}" tcp dport 2096 accept
+      iif "{{ ethernet_interface }}" tcp dport 2096 accept
+    create: yes
+  notify: reload nftables
+  when: xui_installed.stat.exists or xui_install.changed
+
+- name: Save 3x-ui access information
+  lineinfile:
+    path: "{{ credentials_file }}"
+    line: |
+
+      3x-UI Management Panel:
+      URL: http://{{ wifi_gateway }}:{{ xui_port }}/
+      Username: admin
+      Password: {{ xui_admin_password }} (CHANGE IMMEDIATELY!)
+    insertafter: EOF
+  delegate_to: localhost
+  run_once: true
+  become: no
+  when: xui_installed.stat.exists or xui_install.changed

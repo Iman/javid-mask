@@ -1,0 +1,97 @@
+{
+  "log": {
+    "level": "info",
+    "timestamp": true,
+    "output": "{{ singbox_log_dir }}/sing-box.log"
+  },
+  "dns": {
+    "servers": [
+      {
+        "tag": "pihole",
+        "address": "{{ wifi_gateway }}",
+        "address_resolver": "local"
+      },
+      {
+        "tag": "local",
+        "address": "local",
+        "detour": "direct"
+      }
+    ],
+    "rules": [],
+    "strategy": "prefer_ipv4",
+    "disable_cache": false,
+    "disable_expire": false
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "{{ sing_box_listen_address }}",
+      "listen_port": {{ sing_box_mixed_port }},
+      "sniff": true,
+      "sniff_override_destination": false,
+      "set_system_proxy": false
+    },
+    {
+      "type": "socks",
+      "tag": "socks-in",
+      "listen": "{{ sing_box_listen_address }}",
+      "listen_port": {{ sing_box_port }},
+      "sniff": true,
+      "sniff_override_destination": false
+    },
+    {
+      "type": "http",
+      "tag": "http-in",
+      "listen": "{{ sing_box_listen_address }}",
+      "listen_port": {{ sing_box_http_port }},
+      "sniff": true,
+      "sniff_override_destination": false
+    },
+    {
+      "type": "tun",
+      "tag": "tun-in",
+      "interface_name": "{{ sing_box_tun_name }}",
+      "inet4_address": "{{ sing_box_tun_address }}",
+      "auto_route": true,
+      "strict_route": true,
+      "sniff": true,
+      "sniff_override_destination": false,
+      "stack": "system"
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "block",
+      "tag": "block"
+    },
+    {
+      "type": "dns",
+      "tag": "dns-out"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "protocol": "dns",
+        "outbound": "dns-out"
+      },
+      {
+        "ip_is_private": true,
+        "outbound": "direct"
+      }
+    ],
+    "final": "direct",
+    "auto_detect_interface": true
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true,
+      "path": "{{ sing_box_install_dir }}/cache.db"
+    }
+  }
+}

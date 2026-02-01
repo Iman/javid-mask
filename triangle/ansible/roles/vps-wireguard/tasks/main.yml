@@ -1,0 +1,213 @@
+---
+- name: Install WireGuard
+  apt:
+    name:
+      - wireguard
+      - wireguard-tools
+      - iptables
+    state: present
+
+- name: Enable IP forwarding on VPS (persistent)
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Detect VPS network interface
+  shell: ip route | grep default | awk '{print $5}' | head -1
+  register: detected_interface
+  changed_when: false
+
+- name: Set actual VPS interface
+  set_fact:
+    actual_vps_interface: "{{ detected_interface.stdout | default(vps_interface) }}"
+
+- name: Create WireGuard directory
+  file:
+    path: /etc/wireguard
+    state: directory
+    mode: '0700'
+
+- name: Generate WireGuard server keys if not provided
+  shell: |
+    if [ ! -f /etc/wireguard/server_privatekey ]; then
+      wg genkey | tee /etc/wireguard/server_privatekey | wg pubkey > /etc/wireguard/server_publickey
+    fi
+    cat /etc/wireguard/server_privatekey
+  register: wg_server_private
+  changed_when: false
+  when: wireguard_server_private_key == "AUTO-GENERATE"
+
+- name: Set WireGuard server private key fact
+  set_fact:
+    actual_server_private_key: "{{ wg_server_private.stdout if wireguard_server_private_key == 'AUTO-GENERATE' else wireguard_server_private_key }}"
+
+- name: Get server public key
+  shell: |
+    if [ -f /etc/wireguard/server_publickey ]; then
+      cat /etc/wireguard/server_publickey
+    else
+      echo "{{ wireguard_server_public_key }}"
+    fi
+  register: server_pubkey
+  changed_when: false
+
+- name: Generate Pi public key from private key
+  shell: echo "{{ wireguard_pi_private_key }}" | wg pubkey
+  register: wg_pi_public
+  changed_when: false
+
+- name: Set WireGuard Pi public key fact
+  set_fact:
+    actual_pi_public_key: "{{ wg_pi_public.stdout if wireguard_pi_public_key == 'AUTO-GENERATE' else wireguard_pi_public_key }}"
+
+- name: Generate direct client keys if AUTO-GENERATE
+  shell: |
+    if [ ! -f /etc/wireguard/direct_client_privatekey ]; then
+      wg genkey | tee /etc/wireguard/direct_client_privatekey | wg pubkey > /etc/wireguard/direct_client_publickey
+      wg genpsk > /etc/wireguard/direct_client_psk
+    fi
+    echo "PRIVATE:$(cat /etc/wireguard/direct_client_privatekey)"
+    echo "PUBLIC:$(cat /etc/wireguard/direct_client_publickey)"
+    echo "PSK:$(cat /etc/wireguard/direct_client_psk)"
+  register: direct_client_keys
+  changed_when: false
+  when: wireguard_direct_private_key == "AUTO-GENERATE"
+
+- name: Set direct client key facts
+  set_fact:
+    actual_direct_private_key: "{{ direct_client_keys.stdout_lines | select('match', '^PRIVATE:') | first | regex_replace('^PRIVATE:', '') if wireguard_direct_private_key == 'AUTO-GENERATE' else wireguard_direct_private_key }}"
+    actual_direct_public_key: "{{ direct_client_keys.stdout_lines | select('match', '^PUBLIC:') | first | regex_replace('^PUBLIC:', '') if wireguard_direct_public_key == 'AUTO-GENERATE' else wireguard_direct_public_key }}"
+    actual_direct_psk: "{{ direct_client_keys.stdout_lines | select('match', '^PSK:') | first | regex_replace('^PSK:', '') if wireguard_direct_preshared_key == 'AUTO-GENERATE' else wireguard_direct_preshared_key }}"
+  when: wireguard_direct_private_key == "AUTO-GENERATE"
+
+- name: Set direct client key facts (from variables)
+  set_fact:
+    actual_direct_private_key: "{{ wireguard_direct_private_key }}"
+    actual_direct_public_key: "{{ wireguard_direct_public_key }}"
+    actual_direct_psk: "{{ wireguard_direct_preshared_key }}"
+  when: wireguard_direct_private_key != "AUTO-GENERATE"
+
+- name: Create WireGuard server configuration
+  copy:
+    dest: /etc/wireguard/wg0.conf
+    mode: '0600'
+    content: |
+      [Interface]
+      PrivateKey = {{ actual_server_private_key }}
+      Address = {{ wireguard_server_address }}
+      ListenPort = {{ wireguard_port }}
+
+      PostUp = iptables -A FORWARD -i wg0 -j ACCEPT
+      PostUp = iptables -A FORWARD -o wg0 -m state --state ESTABLISHED,RELATED -j ACCEPT
+      PostUp = iptables -t nat -A POSTROUTING -o {{ actual_vps_interface }} -j MASQUERADE
+      PostUp = sysctl -w net.ipv4.ip_forward=1
+
+      PostDown = iptables -D FORWARD -i wg0 -j ACCEPT
+      PostDown = iptables -D FORWARD -o wg0 -m state --state ESTABLISHED,RELATED -j ACCEPT
+      PostDown = iptables -t nat -D POSTROUTING -o {{ actual_vps_interface }} -j MASQUERADE
+
+      # Raspberry Pi Gateway Client (10.0.0.2)
+      [Peer]
+      PublicKey = {{ actual_pi_public_key }}
+      PresharedKey = {{ wireguard_pi_preshared_key }}
+      AllowedIPs = {{ wireguard_pi_address }}, {{ wifi_network }}
+
+      # Direct Client - Mobile/Laptop (10.0.0.3)
+      [Peer]
+      PublicKey = {{ actual_direct_public_key }}
+      PresharedKey = {{ actual_direct_psk }}
+      AllowedIPs = {{ wireguard_direct_address }}
+  notify: restart wireguard
+
+- name: Setup iptables rules immediately
+  shell: |
+    iptables -C FORWARD -i wg0 -j ACCEPT 2>/dev/null || iptables -A FORWARD -i wg0 -j ACCEPT
+    iptables -C FORWARD -o wg0 -m state --state ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || iptables -A FORWARD -o wg0 -m state --state ESTABLISHED,RELATED -j ACCEPT
+    iptables -t nat -C POSTROUTING -o {{ actual_vps_interface }} -j MASQUERADE 2>/dev/null || iptables -t nat -A POSTROUTING -o {{ actual_vps_interface }} -j MASQUERADE
+  changed_when: false
+
+- name: Enable WireGuard service
+  systemd:
+    name: wg-quick@wg0
+    enabled: yes
+    daemon_reload: yes
+
+- name: Restart WireGuard to apply changes
+  shell: |
+    wg-quick down wg0 2>/dev/null || true
+    sleep 1
+    wg-quick up wg0
+  changed_when: true
+
+- name: Display WireGuard status
+  shell: wg show wg0
+  register: wg_status
+  changed_when: false
+
+- name: Show WireGuard status
+  debug:
+    msg: "{{ wg_status.stdout_lines }}"
+
+- name: Generate Pi WireGuard client config
+  copy:
+    dest: /etc/wireguard/pi-client.conf
+    mode: '0600'
+    content: |
+      # WireGuard Client Config for Raspberry Pi Gateway
+      # Uses Cloudflare DNS (Pi has local Pi-hole)
+
+      [Interface]
+      PrivateKey = {{ wireguard_pi_private_key }}
+      Address = {{ wireguard_pi_address }}
+      DNS = {{ wireguard_dns }}
+      MTU = {{ wireguard_mtu }}
+
+      [Peer]
+      PublicKey = {{ server_pubkey.stdout }}
+      PresharedKey = {{ wireguard_pi_preshared_key }}
+      AllowedIPs = 0.0.0.0/0
+      Endpoint = {{ vps_ip }}:{{ wireguard_port }}
+      PersistentKeepalive = 25
+
+- name: Generate Direct WireGuard client config
+  copy:
+    dest: /etc/wireguard/direct-client.conf
+    mode: '0600'
+    content: |
+      # WireGuard Client Config for Direct Connection (Mobile/Laptop)
+      # Uses VPS Pi-hole DNS for ad blocking
+
+      [Interface]
+      PrivateKey = {{ actual_direct_private_key }}
+      Address = {{ wireguard_direct_address }}
+      DNS = 10.0.0.1
+      MTU = {{ wireguard_mtu }}
+
+      [Peer]
+      PublicKey = {{ server_pubkey.stdout }}
+      PresharedKey = {{ actual_direct_psk }}
+      AllowedIPs = 0.0.0.0/0
+      Endpoint = {{ vps_ip }}:{{ wireguard_port }}
+      PersistentKeepalive = 25
+
+- name: Save Pi client config locally
+  fetch:
+    src: /etc/wireguard/pi-client.conf
+    dest: "{{ playbook_dir }}/../wireguard-pi-client.conf"
+    flat: yes
+
+- name: Save Direct client config locally
+  fetch:
+    src: /etc/wireguard/direct-client.conf
+    dest: "{{ playbook_dir }}/../wireguard-direct-client.conf"
+    flat: yes
+
+- name: Display client config locations
+  debug:
+    msg:
+      - "Pi Client Config: {{ playbook_dir }}/../wireguard-pi-client.conf"
+      - "Direct Client Config: {{ playbook_dir }}/../wireguard-direct-client.conf"
+      - "Import direct-client.conf on your mobile/laptop WireGuard app"

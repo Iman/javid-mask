@@ -1,0 +1,12 @@
+---
+- name: restart networking
+  systemd:
+    name: networking
+    state: restarted
+  ignore_errors: yes
+
+- name: restart dhcpcd
+  systemd:
+    name: dhcpcd
+    state: restarted
+  ignore_errors: yes

@@ -1,0 +1,371 @@
+# MIT License
+# Copyright (c) 2026 Iman Samizadeh
+# See LICENSE file in the project root for full license text.
+
+---
+- name: Configure Raspberry Pi as Secure WiFi Proxy with Pi-hole and Iranian IP/Domain Blocking
+  hosts: raspberry_pi
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Create credentials file header
+      lineinfile:
+        path: "{{ credentials_file }}"
+        line: "=== Raspberry Pi WiFi Proxy Credentials ==="
+        create: yes
+        mode: '0600'
+      delegate_to: localhost
+      run_once: true
+      become: no
+
+    - name: Record deployment timestamp
+      lineinfile:
+        path: "{{ credentials_file }}"
+        line: "Deployment Date: {{ ansible_facts.date_time.iso8601 }}"
+        insertafter: EOF
+      delegate_to: localhost
+      run_once: true
+      become: no
+
+    - name: Display initial configuration
+      debug:
+        msg:
+          - "Target Host: {{ ansible_host }}"
+          - "WiFi Interface: {{ wifi_interface }}"
+          - "Ethernet Interface: {{ ethernet_interface }}"
+          - "WiFi Network: {{ wifi_network }}"
+          - "WiFi Gateway: {{ wifi_gateway }}"
+
+  roles:
+    - prerequisites
+    - network
+    - hostapd
+    - singbox
+    - pihole
+    - firewall
+    - 3x-ui
+
+  post_tasks:
+    - name: Retrieve WiFi password from Pi
+      slurp:
+        src: /tmp/.wifi_password
+      register: wifi_password_remote
+      ignore_errors: yes
+
+    - name: Retrieve Pi-hole password from Pi
+      slurp:
+        src: /tmp/.pihole_password
+      register: pihole_password_remote
+      ignore_errors: yes
+
+    - name: Get actual WiFi SSID from hostapd config
+      shell: grep '^ssid=' /etc/hostapd/hostapd.conf | cut -d'=' -f2
+      register: actual_wifi_ssid
+      ignore_errors: yes
+
+    - name: Get actual WiFi password from hostapd config
+      shell: grep '^wpa_passphrase=' /etc/hostapd/hostapd.conf | cut -d'=' -f2
+      register: actual_wifi_password
+      ignore_errors: yes
+
+    - name: Get sing-box version
+      shell: /usr/local/bin/sing-box version 2>/dev/null | head -1 | awk '{print $3}'
+      register: singbox_version
+      ignore_errors: yes
+
+    - name: Get Pi-hole version
+      shell: pihole -v 2>/dev/null | grep FTL | awk '{print $4}'
+      register: pihole_version
+      ignore_errors: yes
+
+    - name: Write comprehensive credentials file
+      copy:
+        dest: "{{ credentials_file }}"
+        mode: '0600'
+        content: |
+          ===============================================
+            RASPBERRY PI WIFI PROXY - CREDENTIALS
+          ===============================================
+
+          Deployment Date: {{ ansible_facts.date_time.iso8601 }}
+          Raspberry Pi IP: {{ ansible_host }}
+          System: {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }} ({{ ansible_facts.architecture }})
+
+
+          ===============================================
+            WIFI ACCESS POINT
+          ===============================================
+
+          SSID:     {{ actual_wifi_ssid.stdout | default(wifi_ssid) }}
+          Password: {{ actual_wifi_password.stdout | default('Check /etc/hostapd/hostapd.conf on Pi') }}
+          Security: WPA2-PSK
+          Channel:  {{ wifi_channel }}
+
+          Network Details:
+            Gateway:     {{ wifi_gateway }}
+            Subnet:      {{ wifi_network }}
+            DHCP Range:  {{ dhcp_range_start }} - {{ dhcp_range_end }}
+            DNS Server:  {{ wifi_gateway }} (Pi-hole)
+
+
+          ===============================================
+            PI-HOLE DNS FILTERING
+          ===============================================
+
+          Web Interface: http://{{ wifi_gateway }}/admin
+          Admin Password: {{ pihole_password_remote.content | b64decode | default('Check /tmp/.pihole_password on Pi') | trim }}
+
+          Version: {{ pihole_version.stdout | default('Latest') }}
+
+          Access from WiFi:
+            - Connect to WiFi network above
+            - Open browser to http://{{ wifi_gateway }}/admin
+            - Login with password above
+
+          Access from LAN:
+            - Browser to http://{{ ansible_host }}/admin
+            - Login with same password
+
+
+          ===============================================
+            SING-BOX PROXY SERVICES
+          ===============================================
+
+          Version: {{ singbox_version.stdout | default('1.8.0') }}
+
+          Proxy Endpoints:
+            SOCKS5:  {{ wifi_gateway }}:{{ sing_box_port }}
+            HTTP:    {{ wifi_gateway }}:{{ sing_box_http_port }}
+            Mixed:   {{ wifi_gateway }}:{{ sing_box_mixed_port }}
+            TUN:     tun0 (transparent proxy)
+
+          Configuration File:
+            /opt/singbox/config.json
+
+          Usage Examples:
+            curl --socks5 {{ wifi_gateway }}:{{ sing_box_port }} https://ifconfig.me
+            curl --proxy http://{{ wifi_gateway }}:{{ sing_box_http_port }} https://ifconfig.me
+
+
+          ===============================================
+            3X-UI MANAGEMENT PANEL
+          ===============================================
+
+          Web Interface: http://{{ wifi_gateway }}:{{ xui_port }}/
+          Subscription:  http://{{ wifi_gateway }}:{{ xui_subscription_port }}/sub/
+
+          Default Credentials:
+            Username: admin
+            Password: {{ xui_admin_password }}
+
+          **SECURITY WARNING**: Change the default password immediately after first login!
+
+          Access from WiFi:
+            - Connect to WiFi network above
+            - Open browser to http://{{ wifi_gateway }}:{{ xui_port }}/
+            - Login with admin/password
+            - Change password in panel settings
+
+          Access from LAN:
+            - Browser to http://{{ ansible_host }}:{{ xui_port }}/
+            - Login with same credentials
+
+          Management Commands:
+            x-ui start      - Start x-ui service
+            x-ui stop       - Stop x-ui service
+            x-ui restart    - Restart x-ui service
+            x-ui status     - Check service status
+            x-ui update     - Update to latest version
+            x-ui uninstall  - Remove x-ui
+
+          Features:
+            - Xray-core based proxy management
+            - Traffic statistics and monitoring
+            - Inbound/outbound management
+            - User subscription management
+            - Protocol support: VLESS, VMess, Trojan, Shadowsocks, Reality, etc.
+            - Multi-user management with traffic limits
+
+
+          ===============================================
+            SSH ACCESS
+          ===============================================
+
+          Connection:
+            ssh {{ ansible_user }}@{{ ansible_host }}
+
+          Note: Password-based authentication is used.
+                Ensure you have the {{ ansible_user }} user password.
+
+
+          ===============================================
+            NETWORK CONFIGURATION
+          ===============================================
+
+          Interface: {{ ethernet_interface }} (Upstream/WAN)
+            IP Address:  {{ ansible_host }}/24
+            Purpose:     Internet connection
+
+          Interface: {{ wifi_interface }} (WiFi AP)
+            IP Address:  {{ wifi_gateway }}/24
+            Purpose:     WiFi Access Point for clients
+
+          Interface: tun0 (Sing-box TUN)
+            IP Address:  172.19.0.1/30
+            Purpose:     Transparent proxy routing
+
+
+          ===============================================
+            SERVICE MANAGEMENT
+          ===============================================
+
+          Start/Stop Services:
+            sudo systemctl start|stop|restart hostapd
+            sudo systemctl start|stop|restart pihole-FTL
+            sudo systemctl start|stop|restart sing-box
+            sudo systemctl start|stop|restart nftables
+            x-ui start|stop|restart (for 3x-UI management)
+
+          Check Service Status:
+            sudo systemctl status hostapd
+            sudo systemctl status pihole-FTL
+            sudo systemctl status sing-box
+            sudo systemctl status nftables
+            x-ui status
+
+          View Logs:
+            sudo journalctl -u hostapd -f
+            sudo journalctl -u pihole-FTL -f
+            sudo journalctl -u sing-box -f
+            sudo journalctl -u x-ui -f
+
+
+          ===============================================
+            CONFIGURATION FILES
+          ===============================================
+
+          WiFi AP:
+            /etc/hostapd/hostapd.conf
+
+          DHCP (integrated with Pi-hole):
+            /etc/pihole/setupVars.conf
+
+          Sing-box Proxy:
+            /opt/singbox/config.json
+            /etc/systemd/system/sing-box.service
+
+          Pi-hole:
+            /etc/pihole/pihole.toml
+            /etc/pihole/adlists.list
+            /etc/pihole/gravity.db
+
+          Firewall:
+            /etc/nftables.conf
+
+          Blocklists:
+            /opt/blocklists/iranian-ips-combined.txt
+            /opt/blocklists/iranian-domains.txt
+
+
+          ===============================================
+            WEB INTERFACES & CREDENTIALS
+          ===============================================
+
+          1. Pi-hole DNS Admin Panel
+             URL (WiFi):  http://{{ wifi_gateway }}/admin
+             URL (LAN):   http://{{ ansible_host }}/admin
+             Username:    (none - direct password login)
+             Password:    {{ pihole_password_remote.content | b64decode | default('Check /tmp/.pihole_password on Pi') | trim }}
+
+          2. 3x-UI Proxy Management
+             URL (WiFi):  http://{{ wifi_gateway }}:{{ xui_port }}/
+             URL (LAN):   http://{{ ansible_host }}:{{ xui_port }}/
+             Username:    admin
+             Password:    {{ xui_admin_password }}
+             ⚠️ WARNING:  CHANGE DEFAULT PASSWORD IMMEDIATELY!
+
+          3. 3x-UI Subscription Service
+             URL (WiFi):  http://{{ wifi_gateway }}:{{ xui_subscription_port }}/sub/
+             URL (LAN):   http://{{ ansible_host }}:{{ xui_subscription_port }}/sub/
+
+
+          ===============================================
+            QUICK REFERENCE
+          ===============================================
+
+          WiFi Network:     {{ actual_wifi_ssid.stdout | default(wifi_ssid) }} / {{ actual_wifi_password.stdout | default('See above') }}
+          Pi-hole Admin:    http://{{ wifi_gateway }}/admin ({{ pihole_password_remote.content | b64decode | default('See above') | trim }})
+          3x-UI Panel:      http://{{ wifi_gateway }}:{{ xui_port }}/ (admin/{{ xui_admin_password }} - CHANGE!)
+          SSH Access:       ssh {{ ansible_user }}@{{ ansible_host }}
+
+          Proxy Ports:
+            - SOCKS5: {{ sing_box_port }}
+            - HTTP:   {{ sing_box_http_port }}
+            - Mixed:  {{ sing_box_mixed_port }}
+
+
+          ===============================================
+            IMPORTANT NOTES
+          ===============================================
+
+          1. Credential Security:
+             - This file contains sensitive passwords
+             - Store securely and limit access
+             - Consider changing default passwords
+
+          2. WiFi Password:
+             - Randomly generated
+             - Stored in /etc/hostapd/hostapd.conf on Pi
+             - Backup recommended
+
+          3. Pi-hole Password:
+             - Randomly generated
+             - Can be changed: pihole -a -p newpassword
+             - Backup recommended
+
+          4. 3x-UI Default Password:
+             - **CRITICAL SECURITY RISK**: Default password is randomly generated
+             - MUST be changed immediately after first login
+             - Change in 3x-UI panel settings menu
+             - Accessible from both WiFi and LAN networks
+
+          4. Network Access:
+             - WiFi clients: {{ wifi_network }} range
+             - LAN access: {{ ansible_host }}
+             - All services accessible from both networks
+
+          5. Firewall:
+             - nftables configured with NAT
+             - WiFi traffic routed to ethernet
+             - Stateful connection tracking enabled
+
+          6. DNS Security (Pi-hole):
+             - DNS-over-HTTPS (DoH) enabled via Cloudflared
+             - Upstream: Cloudflare 1.1.1.1 over encrypted HTTPS
+             - DNSSec validation enabled
+             - DNS leak prevention configured
+             - Privacy-focused settings applied
+             - Test at: https://dnsleaktest.com (should show Cloudflare)
+      delegate_to: localhost
+      run_once: true
+      become: no
+
+    - name: Display completion message
+      debug:
+        msg:
+          - "=========================================="
+          - "Deployment Complete!"
+          - "=========================================="
+          - "WiFi SSID: {{ actual_wifi_ssid.stdout | default(wifi_ssid) }}"
+          - "WiFi Password: {{ actual_wifi_password.stdout | default('Check credentials file') }}"
+          - "Pi-hole Admin: http://{{ wifi_gateway }}/admin"
+          - "Pi-hole Password: Check {{ credentials_file }}"
+          - "3x-UI Management: http://{{ wifi_gateway }}:{{ xui_port }}/"
+          - "3x-UI Login: admin/{{ xui_admin_password }} (CHANGE IMMEDIATELY!)"
+          - "Sing-box Proxy: {{ wifi_gateway }}:{{ sing_box_port }}"
+          - "=========================================="
+          - "Credentials saved to: {{ credentials_file }}"
+          - "=========================================="
+          - "IMPORTANT: Change 3x-UI default password!"
+          - "Please reboot the Raspberry Pi to ensure all services start correctly"

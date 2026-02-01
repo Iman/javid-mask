@@ -1,0 +1,203 @@
+---
+- name: Create blocklists directory
+  file:
+    path: /opt/blocklists
+    state: directory
+    mode: '0755'
+
+- name: Copy local Iranian IP blocklist
+  copy:
+    src: "{{ playbook_dir }}/files/iranian-ips.txt"
+    dest: /opt/blocklists/iranian-ips.txt
+    mode: '0644'
+
+- name: Clean Iranian IP list
+  shell: |
+    grep -E '^[0-9]' /opt/blocklists/iranian-ips.txt > /opt/blocklists/iranian-ips-clean.txt
+  changed_when: false
+
+- name: Install nftables
+  apt:
+    name: nftables
+    state: present
+
+- name: Disable default nftables service (we use custom script)
+  systemd:
+    name: nftables
+    enabled: no
+    state: stopped
+  ignore_errors: yes
+
+- name: Create comprehensive networking setup script
+  copy:
+    dest: /usr/local/bin/setup-networking.sh
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      LOG=/var/log/setup-networking.log
+      echo "$(date): Starting network setup" >> $LOG
+
+      # Unblock WiFi
+      rfkill unblock wifi 2>/dev/null || true
+      sleep 2
+
+      # Setup wlan0
+      for i in 1 2 3 4 5; do
+        ip link set {{ wifi_interface }} down 2>/dev/null || true
+        ip addr flush dev {{ wifi_interface }} 2>/dev/null || true
+        ip addr add {{ wifi_gateway }}/24 dev {{ wifi_interface }} 2>/dev/null || true
+        if ip link set {{ wifi_interface }} up 2>/dev/null; then
+          echo "$(date): {{ wifi_interface }} up on attempt $i" >> $LOG
+          break
+        fi
+        sleep 2
+      done
+
+      # Start hostapd
+      systemctl start hostapd
+      echo "$(date): hostapd started" >> $LOG
+
+      # Wait for WireGuard
+      for i in 1 2 3 4 5 6; do
+        if ip link show wg0 > /dev/null 2>&1; then
+          echo "$(date): wg0 found" >> $LOG
+          break
+        fi
+        echo "$(date): Waiting for wg0... ($i)" >> $LOG
+        sleep 2
+      done
+
+      # Enable IP forwarding
+      sysctl -w net.ipv4.ip_forward=1
+
+      # Load nftables with proper rules
+      nft flush ruleset 2>/dev/null || true
+
+      nft -f - << "NFT"
+      table inet filter {
+        set iranian_blocklist {
+          type ipv4_addr
+          flags interval
+          auto-merge
+        }
+        chain input {
+          type filter hook input priority filter; policy accept;
+          ct state invalid drop
+          ct state established,related accept
+          iif lo accept
+          ip saddr @iranian_blocklist drop
+          tcp dport 22 accept
+          tcp dport 53 accept
+          udp dport 53 accept
+          tcp dport 80 accept
+        }
+        chain forward {
+          type filter hook forward priority filter; policy drop;
+          ct state invalid drop
+          ct state established,related accept
+          ip saddr @iranian_blocklist drop
+          ip daddr @iranian_blocklist drop
+          oifname "wg0" accept
+          iifname "wg0" accept
+          iifname "{{ wifi_interface }}" accept
+        }
+        chain output {
+          type filter hook output priority filter; policy accept;
+          ip daddr @iranian_blocklist drop
+        }
+      }
+      table ip nat {
+        chain postrouting {
+          type nat hook postrouting priority srcnat; policy accept;
+          oifname "wg0" masquerade
+          oifname "{{ ethernet_interface }}" masquerade
+        }
+      }
+      NFT
+
+      # Load Iranian IPs
+      if [ -f /opt/blocklists/iranian-ips-clean.txt ]; then
+        ELEMENTS=$(cat /opt/blocklists/iranian-ips-clean.txt | tr '\n' ',' | sed 's/,$//')
+        nft add element inet filter iranian_blocklist "{ $ELEMENTS }" 2>/dev/null || true
+        echo "$(date): Iranian IPs loaded" >> $LOG
+      fi
+
+      # Add routing rule for WiFi
+      ip rule add from {{ wifi_network }} table 51820 priority 100 2>/dev/null || true
+
+      echo "$(date): Setup complete" >> $LOG
+
+- name: Create setup-networking systemd service
+  copy:
+    dest: /etc/systemd/system/setup-networking.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Setup networking for WiFi AP and VPN
+      After=network-online.target wg-quick@wg0.service
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/local/bin/setup-networking.sh
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Enable setup-networking service
+  systemd:
+    name: setup-networking
+    enabled: yes
+
+- name: Create hostapd override to depend on setup-networking
+  file:
+    path: /etc/systemd/system/hostapd.service.d
+    state: directory
+    mode: '0755'
+
+- name: Configure hostapd dependencies
+  copy:
+    dest: /etc/systemd/system/hostapd.service.d/override.conf
+    mode: '0644'
+    content: |
+      [Unit]
+      After=wlan0-setup.service setup-networking.service
+      Wants=wlan0-setup.service
+
+- name: Reload systemd after hostapd override
+  systemd:
+    daemon_reload: yes
+
+- name: Run setup-networking now
+  shell: /usr/local/bin/setup-networking.sh
+  changed_when: false
+
+- name: Create firewall update script
+  copy:
+    dest: /usr/local/bin/update-firewall.sh
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      cd /opt/blocklists
+      wget -q -O iranian-ips-new.txt https://raw.githubusercontent.com/herrbischoff/country-ip-blocks/master/ipv4/ir.cidr
+      if [ -s iranian-ips-new.txt ]; then
+        grep -E '^[0-9]' iranian-ips-new.txt > iranian-ips-clean.txt
+        nft flush set inet filter iranian_blocklist
+        ELEMENTS=$(cat iranian-ips-clean.txt | tr '\n' ',' | sed 's/,$//')
+        nft add element inet filter iranian_blocklist "{ $ELEMENTS }"
+        echo "$(date): Firewall updated" >> /var/log/firewall-update.log
+      fi
+
+- name: Create weekly cron job for firewall updates
+  cron:
+    name: "Update Iranian IP blocklist"
+    minute: "0"
+    hour: "3"
+    weekday: "0"
+    job: "/usr/local/bin/update-firewall.sh > /dev/null 2>&1"
+    user: root

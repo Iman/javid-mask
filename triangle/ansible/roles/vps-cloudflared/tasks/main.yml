@@ -1,0 +1,79 @@
+---
+- name: Check if cloudflared is already installed
+  stat:
+    path: /usr/local/bin/cloudflared
+  register: cloudflared_installed
+
+- name: Detect system architecture
+  shell: dpkg --print-architecture
+  register: system_arch
+  changed_when: false
+
+- name: Download cloudflared
+  get_url:
+    url: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-{{ system_arch.stdout }}"
+    dest: /usr/local/bin/cloudflared
+    mode: '0755'
+  when: not cloudflared_installed.stat.exists
+
+- name: Create cloudflared user
+  user:
+    name: cloudflared
+    system: yes
+    shell: /usr/sbin/nologin
+    home: /var/lib/cloudflared
+    create_home: yes
+
+- name: Create cloudflared config directory
+  file:
+    path: /etc/cloudflared
+    state: directory
+    owner: cloudflared
+    group: cloudflared
+    mode: '0755'
+
+- name: Configure cloudflared for DNS-over-HTTPS
+  copy:
+    dest: /etc/cloudflared/config.yml
+    owner: cloudflared
+    group: cloudflared
+    mode: '0644'
+    content: |
+      proxy-dns: true
+      proxy-dns-port: {{ vps_cloudflared_dns_port }}
+      proxy-dns-address: {{ vps_cloudflared_dns_address }}
+      proxy-dns-upstream:
+        - https://1.1.1.1/dns-query
+        - https://1.0.0.1/dns-query
+        - https://2606:4700:4700::1111/dns-query
+        - https://2606:4700:4700::1001/dns-query
+
+- name: Create cloudflared systemd service
+  copy:
+    dest: /etc/systemd/system/cloudflared.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Cloudflare DNS-over-HTTPS Proxy
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=simple
+      User=cloudflared
+      Group=cloudflared
+      ExecStart=/usr/local/bin/cloudflared --config /etc/cloudflared/config.yml --no-autoupdate
+      Restart=always
+      RestartSec=5
+      StandardOutput=append:/var/log/cloudflared.log
+      StandardError=append:/var/log/cloudflared.log
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable and start cloudflared service
+  systemd:
+    name: cloudflared
+    enabled: yes
+    state: started
+    daemon_reload: yes

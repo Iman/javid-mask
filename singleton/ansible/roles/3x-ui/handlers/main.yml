@@ -1,0 +1,11 @@
+---
+- name: restart 3x-ui
+  systemd:
+    name: x-ui
+    state: restarted
+
+- name: reload nftables
+  systemd:
+    name: nftables
+    state: reloaded
+  changed_when: false

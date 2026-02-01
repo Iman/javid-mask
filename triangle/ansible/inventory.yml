@@ -1,0 +1,19 @@
+all:
+  children:
+    proxy_server:
+      hosts:
+        vps:
+          ansible_host: 206.189.15.223
+          ansible_user: root
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+          ansible_python_interpreter: /usr/bin/python3
+
+    local_gateway:
+      hosts:
+        raspberry_pi:
+          ansible_host: 10.0.0.161
+          ansible_user: admin
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+          ansible_become: yes
+          ansible_become_method: sudo
+          ansible_python_interpreter: /usr/bin/python3

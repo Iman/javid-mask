@@ -1,0 +1,37 @@
+---
+- name: Create health check script
+  copy:
+    dest: /usr/local/bin/health-endpoint.sh
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      PORT={{ xui_health_check_port }}
+      
+      while true; do
+        echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{\"status\":\"healthy\",\"service\":\"javid-proxy\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" | nc -l -p $PORT -q 1
+      done
+
+- name: Create health endpoint systemd service
+  copy:
+    dest: /etc/systemd/system/health-endpoint.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Health Check Endpoint
+      After=network.target
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/local/bin/health-endpoint.sh
+      Restart=always
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable and start health endpoint service
+  systemd:
+    name: health-endpoint
+    enabled: yes
+    state: started
+    daemon_reload: yes

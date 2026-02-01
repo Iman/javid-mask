@@ -1,0 +1,18 @@
+---
+- name: update gravity
+  command: pihole -g
+
+- name: reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: restart pihole
+  systemd:
+    name: pihole-FTL
+    state: restarted
+
+- name: reload nftables
+  systemd:
+    name: nftables
+    state: reloaded
+  changed_when: false

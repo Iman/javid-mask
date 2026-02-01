@@ -1,0 +1,138 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.3.6 Chrome/140.0.7339.249 Electron/38.8.0 Safari/537.36" version="29.3.6">
+  <diagram name="WireGuard Data Flow" id="wg-data-flow">
+    <mxGraphModel dx="1432" dy="1098" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=22;fontStyle=1" value="Triangle Architecture - WireGuard Data Flow" vertex="1">
+          <mxGeometry height="40" width="800" x="300" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="copyright" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#666666" value="© 2026 Iman Samizadeh | MIT License" vertex="1">
+          <mxGeometry height="20" width="400" x="500" y="860" as="geometry" />
+        </mxCell>
+
+        <!-- WiFi Client -->
+        <mxCell id="client" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1" value="WiFi Client&#xa;Phone/Laptop&#xa;10.0.0.50-100" vertex="1">
+          <mxGeometry height="80" width="150" x="50" y="150" as="geometry" />
+        </mxCell>
+
+        <!-- Step 1 Arrow -->
+        <mxCell id="step1" edge="1" parent="1" source="client" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#d79b00" target="pi-wifi" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="step1-label" connectable="0" parent="step1" style="edgeLabel;html=1;align=center;verticalRezagn=middle;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#d79b00;backgroundColor=#ffffff" value="1. WiFi&#xa;WPA2-PSK" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry" />
+        </mxCell>
+
+        <!-- Pi WiFi AP -->
+        <mxCell id="pi-wifi" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;fontStyle=1" value="Pi WiFi AP&#xa;hostapd (wlan0)&#xa;10.0.0.242" vertex="1">
+          <mxGeometry height="80" width="150" x="280" y="150" as="geometry" />
+        </mxCell>
+
+        <!-- Step 2 Arrow -->
+        <mxCell id="step2" edge="1" parent="1" source="pi-wifi" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#6c8ebf" target="pi-dns" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="step2-label" connectable="0" parent="step2" style="edgeLabel;html=1;align=center;verticalRezagn=middle;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#6c8ebf;backgroundColor=#ffffff" value="2. DNS Query&#xa;Port 53" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry" />
+        </mxCell>
+
+        <!-- Pi-hole DNS -->
+        <mxCell id="pi-dns" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1" value="Pi-hole DNS&#xa;1.6M blocked&#xa;Cloudflared DoH" vertex="1">
+          <mxGeometry height="80" width="150" x="510" y="150" as="geometry" />
+        </mxCell>
+
+        <!-- Step 3 Arrow -->
+        <mxCell id="step3" edge="1" parent="1" source="pi-dns" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#9673a6;dashed=1" target="cloudflare" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="step3-label" connectable="0" parent="step3" style="edgeLabel;html=1;align=center;verticalRezagn=middle;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#9673a6;backgroundColor=#ffffff" value="3. DoH&#xa;HTTPS" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry" />
+        </mxCell>
+
+        <!-- Cloudflare -->
+        <mxCell id="cloudflare" parent="1" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1" value="Cloudflare&#xa;1.1.1.1&#xa;DNS-over-HTTPS" vertex="1">
+          <mxGeometry height="90" width="150" x="740" y="145" as="geometry" />
+        </mxCell>
+
+        <!-- Pi Firewall -->
+        <mxCell id="pi-fw" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1" value="nftables Firewall&#xa;Iranian IP Block&#xa;Policy Routing" vertex="1">
+          <mxGeometry height="80" width="150" x="280" y="320" as="geometry" />
+        </mxCell>
+
+        <!-- Step 4 Arrow -->
+        <mxCell id="step4" edge="1" parent="1" source="pi-wifi" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#b85450;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0" target="pi-fw" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="step4-label" connectable="0" parent="step4" style="edgeLabel;html=1;align=center;verticalRezagn=middle;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#b85450;backgroundColor=#ffffff" value="4. Traffic&#xa;Filter" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry" />
+        </mxCell>
+
+        <!-- Pi WireGuard Client -->
+        <mxCell id="pi-wg" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1" value="WireGuard Client&#xa;wg0: 10.8.0.2&#xa;Table 200 Routing" vertex="1">
+          <mxGeometry height="80" width="150" x="510" y="320" as="geometry" />
+        </mxCell>
+
+        <!-- Step 5 Arrow -->
+        <mxCell id="step5" edge="1" parent="1" source="pi-fw" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#82b366" target="pi-wg" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="step5-label" connectable="0" parent="step5" style="edgeLabel;html=1;align=center;verticalRezagn=middle;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#82b366;backgroundColor=#ffffff" value="5. Route to&#xa;WireGuard" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry" />
+        </mxCell>
+
+        <!-- VPS WireGuard Server -->
+        <mxCell id="vps-wg" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1" value="VPS WireGuard&#xa;wg0: 10.8.0.1&#xa;206.189.15.223:17065" vertex="1">
+          <mxGeometry height="80" width="180" x="750" y="320" as="geometry" />
+        </mxCell>
+
+        <!-- Step 6 Arrow (Tunnel) -->
+        <mxCell id="step6" edge="1" parent="1" source="pi-wg" style="endArrow=classic;html=1;strokeWidth=4;strokeColor=#82b366;dashed=1;dashPattern=8 8" target="vps-wg" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="step6-label" connectable="0" parent="step6" style="edgeLabel;html=1;align=center;verticalRezagn=middle;resizable=0;points=[];fontSize=12;fontStyle=1;fontColor=#82b366;backgroundColor=#ffffff" value="6. Encrypted Tunnel&#xa;UDP Port 17065" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry" />
+        </mxCell>
+
+        <!-- VPS Firewall -->
+        <mxCell id="vps-fw" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1" value="VPS nftables&#xa;Iranian IP Block&#xa;NAT Masquerade" vertex="1">
+          <mxGeometry height="80" width="180" x="750" y="490" as="geometry" />
+        </mxCell>
+
+        <!-- Step 7 Arrow -->
+        <mxCell id="step7" edge="1" parent="1" source="vps-wg" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#b85450" target="vps-fw" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="step7-label" connectable="0" parent="step7" style="edgeLabel;html=1;align=center;verticalRezagn=middle;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#b85450;backgroundColor=#ffffff" value="7. Decrypt &amp;&#xa;Filter" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry" />
+        </mxCell>
+
+        <!-- Internet -->
+        <mxCell id="internet" parent="1" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1" value="Internet" vertex="1">
+          <mxGeometry height="100" width="180" x="750" y="660" as="geometry" />
+        </mxCell>
+
+        <!-- Step 8 Arrow -->
+        <mxCell id="step8" edge="1" parent="1" source="vps-fw" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#6c8ebf" target="internet" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="step8-label" connectable="0" parent="step8" style="edgeLabel;html=1;align=center;verticalRezagn=middle;resizable=0;points=[];fontSize=11;fontStyle=1;fontColor=#6c8ebf;backgroundColor=#ffffff" value="8. NAT to&#xa;Internet" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry" />
+        </mxCell>
+
+        <!-- Legend Box -->
+        <mxCell id="legend" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;strokeWidth=2;fontSize=12;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=10" value="Data Flow Summary:&#xa;&#xa;1. WiFi Client connects to Pi AP (WPA2-PSK)&#xa;2. DNS queries go to Pi-hole (filtered)&#xa;3. Pi-hole forwards to Cloudflared (DoH encrypted)&#xa;4. Traffic passes through nftables (Iranian IPs blocked)&#xa;5. Policy routing sends traffic to WireGuard (table 200)&#xa;6. WireGuard encrypts and tunnels to VPS&#xa;7. VPS decrypts, filters through nftables&#xa;8. VPS NAT masquerades traffic to Internet&#xa;&#xa;Result: All WiFi client traffic exits via VPS IP&#xa;External IP visible: 206.189.15.223" vertex="1">
+          <mxGeometry height="250" width="380" x="50" y="490" as="geometry" />
+        </mxCell>
+
+        <!-- IP Labels -->
+        <mxCell id="ip-label1" parent="1" style="text;html=1;strokeColor=none;fillColor=#d5e8d4;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=1;fontSize=10;fontStyle=1" value="WireGuard Network: 10.8.0.0/24" vertex="1">
+          <mxGeometry height="25" width="200" x="580" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="ip-label2" parent="1" style="text;html=1;strokeColor=none;fillColor=#ffe6cc;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=1;fontSize=10;fontStyle=1" value="WiFi Network: 10.0.0.0/24" vertex="1">
+          <mxGeometry height="25" width="200" x="200" y="100" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

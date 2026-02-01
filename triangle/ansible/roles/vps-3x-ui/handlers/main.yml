@@ -1,0 +1,5 @@
+---
+- name: restart x-ui
+  systemd:
+    name: x-ui
+    state: restarted

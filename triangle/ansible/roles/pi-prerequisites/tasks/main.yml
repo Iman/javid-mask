@@ -1,0 +1,148 @@
+---
+- name: Configure temporary DNS
+  copy:
+    dest: /etc/resolv.conf
+    content: |
+      nameserver 8.8.8.8
+      nameserver 1.1.1.1
+    mode: '0644'
+
+- name: Install locales package
+  apt:
+    name: locales
+    state: present
+    update_cache: yes
+
+- name: Generate en_US.UTF-8 locale
+  locale_gen:
+    name: en_US.UTF-8
+    state: present
+
+- name: Generate en_GB.UTF-8 locale
+  locale_gen:
+    name: en_GB.UTF-8
+    state: present
+
+- name: Set default locale
+  copy:
+    dest: /etc/default/locale
+    content: |
+      LANG=en_US.UTF-8
+      LC_ALL=en_US.UTF-8
+    mode: '0644'
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install essential packages
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - git
+      - vim
+      - htop
+      - net-tools
+      - iptables
+      - nftables
+      - dnsutils
+      - wget
+      - unzip
+      - jq
+      - python3
+      - python3-pip
+      - hostapd
+      - rfkill
+      - dhcpcd5
+      - iproute2
+    state: present
+
+- name: Enable IP forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Persist IP forwarding in sysctl.conf
+  lineinfile:
+    path: /etc/sysctl.conf
+    regexp: '^#?net.ipv4.ip_forward'
+    line: 'net.ipv4.ip_forward=1'
+
+- name: Create sysctl.d config for IP forwarding
+  copy:
+    dest: /etc/sysctl.d/99-ip-forward.conf
+    mode: '0644'
+    content: |
+      net.ipv4.ip_forward=1
+      net.ipv4.conf.all.src_valid_mark=1
+
+- name: Disable IPv6
+  sysctl:
+    name: "{{ item }}"
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+  loop:
+    - net.ipv6.conf.all.disable_ipv6
+    - net.ipv6.conf.default.disable_ipv6
+
+- name: Enable source address validation
+  sysctl:
+    name: net.ipv4.conf.all.src_valid_mark
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Create working directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /opt/blocklists
+    - /var/log/health-check
+    - /etc/nftables
+
+- name: Install rfkill if not present
+  apt:
+    name: rfkill
+    state: present
+
+- name: Unblock WiFi at boot
+  copy:
+    dest: /etc/systemd/system/rfkill-unblock.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Unblock WiFi at boot
+      Before=wlan0-setup.service hostapd.service
+      After=systemd-modules-load.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/sbin/rfkill unblock wifi
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable rfkill-unblock service
+  systemd:
+    name: rfkill-unblock
+    enabled: yes
+    daemon_reload: yes
+
+- name: Start rfkill-unblock service
+  systemd:
+    name: rfkill-unblock
+    state: started
+  ignore_errors: yes

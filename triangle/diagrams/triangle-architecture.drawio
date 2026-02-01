@@ -1,0 +1,306 @@
+<mxfile host="app.diagrams.net" modified="2026-02-01T00:00:00.000Z" agent="5.0" version="22.1.11">
+  <diagram name="Triangle Architecture - WireGuard VPN with Starlink" id="triangle-starlink-arch">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title Section -->
+        <mxCell id="title" value="Triangle Architecture - WireGuard VPN Gateway" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
+          <mxGeometry x="400" y="15" width="800" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="subtitle" value="Distributed Privacy: WiFi Clients → Pi Gateway → WireGuard Tunnel → VPS Exit Point → Internet (All traffic exits via VPS IP)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="400" y="50" width="800" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Internet Cloud -->
+        <mxCell id="internet" value="PUBLIC&#10;INTERNET" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=18;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="700" y="80" width="200" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- VPS SERVER SECTION -->
+        <mxCell id="vps-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="550" y="210" width="500" height="280" as="geometry"/>
+        </mxCell>
+        <mxCell id="vps-title" value="VPS SERVER - EXIT POINT" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="650" y="215" width="300" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="vps-ip" value="Public IP: 206.189.15.223 | Location: Amsterdam/London | Your traffic appears from this IP" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="570" y="240" width="460" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="vps-wg" value="WireGuard Server&#10;&#10;Interface: wg0&#10;Address: 10.8.0.1/24&#10;Port: 56821/UDP&#10;Peers: Pi (10.8.0.2)&#10;       Direct (10.8.0.3)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="570" y="270" width="150" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="vps-pihole" value="Pi-hole DNS (VPS)&#10;&#10;Port: 53&#10;Blocked: 1.6M+ domains&#10;Upstream: Cloudflared&#10;DNSSEC: Enabled&#10;Secondary filter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="735" y="270" width="145" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="vps-firewall" value="UFW Firewall&#10;&#10;Allow: 22/tcp (SSH)&#10;Allow: 56821/udp (WG)&#10;Allow: 62050/tcp (Health)&#10;Default: Deny incoming" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="895" y="270" width="140" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="vps-services" value="Additional Services: Cloudflared DoH (5053) | Health Endpoint (62050) | 3x-UI Optional (2053)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="570" y="390" width="460" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="vps-exit" value="EXIT POINT: All WiFi client traffic exits here → ISP sees VPS IP only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;align=center" vertex="1" parent="1">
+          <mxGeometry x="570" y="420" width="460" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Connection Internet to VPS -->
+        <mxCell id="inet-vps" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=4;strokeColor=#6c8ebf;" edge="1" parent="1" source="internet" target="vps-container">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inet-vps-label" value="Internet&#10;Traffic" style="edgeLabel;html=1;align=center;verticalRezagn=middle;resizable=0;points=[];fontSize=10;fontColor=#6c8ebf;" vertex="1" connectable="0" parent="inet-vps">
+          <mxGeometry x="-0.1" y="2" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- WireGuard Tunnel -->
+        <mxCell id="wg-tunnel" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=6;strokeColor=#82b366;dashed=1;dashPattern=12 12;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="800" y="490" as="sourcePoint"/>
+            <mxPoint x="800" y="570" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wg-tunnel-label" value="WIREGUARD TUNNEL&#10;UDP 56821 | ChaCha20-Poly1305 | Curve25519&#10;All traffic encrypted end-to-end" style="text;html=1;strokeColor=none;fillColor=#d5e8d4;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=1;fontSize=11;fontStyle=1;fontColor=#82b366;strokeWidth=2" vertex="1" parent="1">
+          <mxGeometry x="620" y="510" width="360" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- HOME NETWORK SECTION -->
+        <mxCell id="home-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=2;dashed=1;dashPattern=8 8;" vertex="1" parent="1">
+          <mxGeometry x="50" y="580" width="1500" height="560" as="geometry"/>
+        </mxCell>
+        <mxCell id="home-title" value="HOME NETWORK (Behind Starlink Terminal)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="70" y="590" width="400" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- Starlink Section -->
+        <mxCell id="starlink-section" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="70" y="630" width="200" height="220" as="geometry"/>
+        </mxCell>
+        <mxCell id="starlink-title" value="STARLINK INFRASTRUCTURE" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=1;fontColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="70" y="635" width="200" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="starlink-terminal" value="Starlink Terminal&#10;(Dishy McFlatface)&#10;&#10;CGNAT: 100.x.x.x&#10;Dynamic IP&#10;No port forwarding" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4c4e3;strokeColor=#9673a6;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="85" y="660" width="170" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="starlink-router" value="Starlink Router&#10;&#10;LAN: 10.0.0.1&#10;DHCP: 10.0.0.2-254" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4c4e3;strokeColor=#9673a6;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="85" y="755" width="170" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Connection Terminal to Router -->
+        <mxCell id="term-router" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=2;strokeColor=#9673a6;" edge="1" parent="1" source="starlink-terminal" target="starlink-router">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- RASPBERRY PI GATEWAY -->
+        <mxCell id="pi-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="320" y="630" width="800" height="490" as="geometry"/>
+        </mxCell>
+        <mxCell id="pi-title" value="RASPBERRY PI GATEWAY" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="570" y="635" width="300" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="pi-ips" value="eth0: 10.0.0.242 (LAN) | wlan0: 192.168.4.1 (WiFi AP) | wg0: 10.8.0.2 (Tunnel)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="420" y="655" width="600" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Pi Layer 1: WireGuard Client -->
+        <mxCell id="pi-layer1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="340" y="685" width="760" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="pi-layer1-title" value="LAYER 1: WireGuard Client - Encrypted Tunnel to VPS" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="350" y="690" width="400" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="wg-client" value="WireGuard Client&#10;&#10;Interface: wg0&#10;Address: 10.8.0.2/32&#10;Endpoint: VPS:56821&#10;AllowedIPs: 0.0.0.0/0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="360" y="715" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="wg-config" value="Configuration&#10;&#10;MTU: 1280 (Starlink)&#10;PersistentKeepalive: 25&#10;Pre-shared key: Enabled" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="515" y="715" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="policy-routing" value="Policy Routing (table 200)&#10;&#10;All WiFi traffic → wg0&#10;ip rule: from 192.168.4.0/24&#10;ip route: default dev wg0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="670" y="715" width="145" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="wg-crypto" value="Cryptography&#10;&#10;ChaCha20-Poly1305 (256-bit)&#10;Curve25519 key exchange&#10;BLAKE2s authentication" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="830" y="715" width="145" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="wg-roaming" value="Handles:&#10;IP changes&#10;Roaming" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;fontSize=9;align=center" vertex="1" parent="1">
+          <mxGeometry x="990" y="720" width="85" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- Pi Layer 2: DNS Filtering -->
+        <mxCell id="pi-layer2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="340" y="790" width="760" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="pi-layer2-title" value="LAYER 2: DNS Filtering - Primary Filter (before tunnel)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="350" y="795" width="400" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="pi-pihole" value="Pi-hole v6&#10;&#10;Port: 53 (DNS)&#10;Blocked: 1.6M+ domains&#10;Admin: :80/admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b4d7e8;strokeColor=#6c8ebf;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="360" y="820" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="pi-cloudflared" value="Cloudflared (DoH)&#10;&#10;Listen: 127.0.0.1:5053&#10;Upstream: 1.1.1.1&#10;TLS 1.3 encrypted" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b4d7e8;strokeColor=#6c8ebf;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="515" y="820" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="pi-blocklists" value="Blocklists (17 sources)&#10;&#10;StevenBlack, EasyPrivacy&#10;Phishing Army, Malware&#10;Iranian domains (131K+)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b4d7e8;strokeColor=#6c8ebf;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="670" y="820" width="145" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="pi-dnssec" value="Security&#10;&#10;DNSSEC: Enabled&#10;Rate limit: 1000/60s&#10;Rebind protection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b4d7e8;strokeColor=#6c8ebf;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="830" y="820" width="145" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dns-dhcp" value="DHCP for&#10;WiFi clients" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b4d7e8;strokeColor=#6c8ebf;fontSize=9;align=center" vertex="1" parent="1">
+          <mxGeometry x="990" y="825" width="85" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- Pi Layer 3: Firewall -->
+        <mxCell id="pi-layer3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="340" y="895" width="760" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="pi-layer3-title" value="LAYER 3: nftables Firewall - Iranian IP Blocking &amp; Kill Switch" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="350" y="900" width="450" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="iranian-block" value="Iranian IP Blocking&#10;&#10;Ranges: 763 CIDR&#10;ISPs: MCI, Irancell,&#10;Rightel, Shatel, etc." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="360" y="925" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="nat-masq" value="NAT Masquerade&#10;&#10;wlan0 → wg0&#10;eth0 → internet&#10;Connection tracking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="515" y="925" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="fw-chains" value="Firewall Chains&#10;&#10;input: Drop default&#10;forward: Drop Iranian&#10;output: Accept" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="670" y="925" width="145" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ipv6-block" value="IPv6 Filter&#10;&#10;input: DROP&#10;forward: DROP&#10;output: DROP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="830" y="925" width="145" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="stateful" value="Stateful&#10;filtering" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;fontSize=9;align=center" vertex="1" parent="1">
+          <mxGeometry x="990" y="930" width="85" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- Pi Layer 4: WiFi AP -->
+        <mxCell id="pi-layer4" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="340" y="1000" width="760" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="pi-layer4-title" value="LAYER 4: WiFi Access Point (hostapd) - Client Entry Point" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="350" y="1005" width="400" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="hostapd" value="hostapd&#10;&#10;Interface: wlan0&#10;IP: 192.168.4.1&#10;SSID: TriangleSecure" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd9b3;strokeColor=#d79b00;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="360" y="1030" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="wifi-security" value="Security&#10;&#10;WPA2-PSK (CCMP)&#10;AES-256 encryption&#10;24-char password" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd9b3;strokeColor=#d79b00;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="515" y="1030" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dhcp-range" value="DHCP Range&#10;&#10;192.168.4.50-150&#10;Gateway: 192.168.4.1&#10;DNS: 192.168.4.1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd9b3;strokeColor=#d79b00;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="670" y="1030" width="145" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="wifi-isolation" value="Network Isolation&#10;&#10;192.168.4.0/24&#10;Separate from LAN&#10;(10.0.0.0/24)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd9b3;strokeColor=#d79b00;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="830" y="1030" width="145" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="wifi-channel" value="Ch: 6&#10;2.4GHz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd9b3;strokeColor=#d79b00;fontSize=9;align=center" vertex="1" parent="1">
+          <mxGeometry x="990" y="1035" width="85" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- Kill Switch Section -->
+        <mxCell id="killswitch-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="630" width="380" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="killswitch-title" value="KILL SWITCH - LEAK PREVENTION" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="640" width="280" height="25" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="killswitch-logic" value="IF WireGuard tunnel DOWN:&#10;  → Block ALL traffic immediately&#10;  → No unencrypted traffic leaves&#10;&#10;IF VPS unreachable:&#10;  → Block ALL traffic&#10;  → Alert via health check&#10;&#10;IF Pi-hole DNS fails:&#10;  → Block ALL traffic&#10;  → Prevent DNS leaks&#10;&#10;Auto-recovery when services restore" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=top;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1165" y="670" width="350" height="130" as="geometry"/>
+        </mxCell>
+
+        <!-- Health Check Section -->
+        <mxCell id="health-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="830" width="380" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="health-title" value="HEALTH MONITORING" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="835" width="280" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="health-checks" value="Monitors:&#10;• WireGuard handshake status&#10;• VPS health endpoint (62050)&#10;• Pi-hole DNS resolution&#10;• Cloudflared status&#10;&#10;Interval: 60s | Timeout: 10s | Failures: 3" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=top;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1165" y="860" width="350" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- WiFi Clients -->
+        <mxCell id="clients-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="980" width="380" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="clients-title" value="PROTECTED WiFi CLIENTS (192.168.4.x)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="985" width="280" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="client-phone" value="Phone&#10;192.168.4.x" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=center" vertex="1" parent="1">
+          <mxGeometry x="1170" y="1015" width="80" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="client-laptop" value="Laptop&#10;192.168.4.x" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=center" vertex="1" parent="1">
+          <mxGeometry x="1265" y="1015" width="80" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="client-tablet" value="Tablet&#10;192.168.4.x" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=center" vertex="1" parent="1">
+          <mxGeometry x="1360" y="1015" width="80" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="client-protection" value="All traffic: WiFi → Pi-hole → nftables → WireGuard → VPS → Internet&#10;Exit IP: 206.189.15.223 (VPS) - NOT your home/Starlink IP" style="text;html=1;strokeColor=none;fillColor=#d5e8d4;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="1065" width="360" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- Connection Router to Pi -->
+        <mxCell id="router-pi" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=3;strokeColor=#9673a6;" edge="1" parent="1" source="starlink-router" target="pi-container">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="router-pi-label" value="Ethernet&#10;eth0" style="edgeLabel;html=1;align=center;verticalRezagn=middle;resizable=0;points=[];fontSize=10;fontColor=#9673a6;" vertex="1" connectable="0" parent="router-pi">
+          <mxGeometry x="-0.1" y="2" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Connection Clients to WiFi -->
+        <mxCell id="clients-wifi" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=3;strokeColor=#d79b00;" edge="1" parent="1" source="clients-box" target="pi-layer4">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="clients-wifi-label" value="WiFi&#10;WPA2" style="edgeLabel;html=1;align=center;verticalRezagn=middle;resizable=0;points=[];fontSize=10;fontColor=#d79b00;" vertex="1" connectable="0" parent="clients-wifi">
+          <mxGeometry x="-0.1" y="2" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Traffic Flow Summary -->
+        <mxCell id="flow-summary" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="70" y="870" width="200" height="240" as="geometry"/>
+        </mxCell>
+        <mxCell id="flow-title" value="TRAFFIC FLOW" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="70" y="875" width="200" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="flow-steps" value="1. Client → WiFi AP&#10;   (192.168.4.x)&#10;&#10;2. DNS → Pi-hole&#10;   (1.6M+ blocked)&#10;&#10;3. nftables check&#10;   (763 Iranian IPs)&#10;&#10;4. Policy routing&#10;   (table 200 → wg0)&#10;&#10;5. WireGuard tunnel&#10;   (encrypted)&#10;&#10;6. VPS → Internet&#10;   (exit via VPS IP)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=top;whiteSpace=wrap;rounded=0;fontSize=9;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="80" y="900" width="180" height="200" as="geometry"/>
+        </mxCell>
+
+        <!-- Copyright -->
+        <mxCell id="copyright" value="© 2026 Iman Samizadeh | MIT License | javid-mask Project | Triangle Architecture with Starlink Terminal" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="400" y="1150" width="800" height="25" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

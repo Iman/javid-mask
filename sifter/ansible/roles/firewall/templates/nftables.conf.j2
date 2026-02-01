@@ -1,0 +1,93 @@
+#!/usr/sbin/nft -f
+
+flush ruleset
+
+table inet sifter {
+    # Iranian IP blocklist (populated by update script)
+    set iranian_blocklist {
+        type ipv4_addr
+        flags interval
+        auto-merge
+    }
+
+    chain input {
+        type filter hook input priority filter; policy accept;
+
+        # Allow established/related connections
+        ct state established,related accept
+
+        # Allow loopback
+        iifname "lo" accept
+
+        # Allow ICMP ping
+        ip protocol icmp icmp type echo-request accept
+
+        # Allow SSH
+        tcp dport 22 accept
+
+        # Allow DNS (for Pi-hole)
+        tcp dport 53 accept
+        udp dport 53 accept
+
+        # Allow HTTP for Pi-hole admin
+        tcp dport 80 accept
+
+        # Allow DHCP (if needed)
+        udp dport 67 accept
+        udp sport 68 accept
+
+        # Drop invalid packets
+        ct state invalid drop
+    }
+
+    chain forward {
+        type filter hook forward priority filter; policy drop;
+        # This device is a DNS server only, no forwarding needed
+    }
+
+    chain output {
+        type filter hook output priority filter; policy accept;
+
+        # Allow established/related
+        ct state established,related accept
+
+        # Allow loopback
+        oifname "lo" accept
+
+        # Allow DNS to cloudflared upstream
+        tcp dport 443 accept
+        udp dport 443 accept
+
+        # Allow NTP
+        udp dport 123 accept
+
+        # Allow package updates
+        tcp dport { 80, 443 } accept
+
+{% if block_iranian_ips | default(true) %}
+        # Block ALL traffic to Iranian IPs
+        ip daddr @iranian_blocklist log prefix "SIFTER_BLOCKED_IR: " drop
+{% endif %}
+    }
+}
+
+{% if ipv6_disabled | default(true) %}
+# Block all IPv6 traffic
+table ip6 sifter_ipv6 {
+    chain input {
+        type filter hook input priority filter; policy drop;
+        # Allow loopback only
+        iifname "lo" accept
+    }
+
+    chain forward {
+        type filter hook forward priority filter; policy drop;
+    }
+
+    chain output {
+        type filter hook output priority filter; policy drop;
+        # Allow loopback only
+        oifname "lo" accept
+    }
+}
+{% endif %}

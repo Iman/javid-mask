@@ -1,0 +1,90 @@
+---
+- name: Create blocklists directory
+  file:
+    path: /opt/blocklists
+    state: directory
+    mode: '0755'
+
+- name: Copy local Iranian IP blocklist
+  copy:
+    src: "{{ playbook_dir }}/files/iranian-ips.txt"
+    dest: /opt/blocklists/iranian-ips-combined.txt
+    mode: '0644'
+
+- name: Download Iranian IP ranges from online sources (fallback)
+  get_url:
+    url: "{{ item }}"
+    dest: "/opt/blocklists/iranian-ips-{{ ansible_loop.index }}.txt"
+    mode: '0644'
+  loop: "{{ iranian_ip_sources }}"
+  loop_control:
+    extended: yes
+  ignore_errors: yes
+
+- name: Merge downloaded Iranian IPs with local list
+  shell: |
+    cat /opt/blocklists/iranian-ips-*.txt /opt/blocklists/iranian-ips-combined.txt 2>/dev/null | \
+    grep -E '^[0-9]' | \
+    sort -u | \
+    grep -E '^([0-9]{1,3}\.){3}[0-9]{1,3}(/[0-9]{1,2})?' > /opt/blocklists/iranian-ips-merged.txt && \
+    mv /opt/blocklists/iranian-ips-merged.txt /opt/blocklists/iranian-ips-combined.txt
+  ignore_errors: yes
+
+- name: Create nftables configuration directory
+  file:
+    path: /etc/nftables
+    state: directory
+    mode: '0755'
+
+- name: Clean Iranian IP list (remove ANSI codes)
+  shell: |
+    cat /opt/blocklists/iranian-ips-combined.txt | sed 's/\x1b\[[0-9;]*m//g' | grep -v '^#' | grep -v '^$' | grep -E '^[0-9]' > /opt/blocklists/iranian-ips-clean.txt
+  changed_when: false
+
+- name: Generate nftables configuration with Iranian IP blocking
+  template:
+    src: nftables-with-ips.conf.j2
+    dest: /etc/nftables.conf
+    mode: '0755'
+  notify: reload nftables
+
+- name: Load Iranian IPs into nftables set
+  shell: |
+    # Ensure nftables is loaded
+    nft -f /etc/nftables.conf || true
+    # Add Iranian IPs to the set
+    ELEMENTS=$(cat /opt/blocklists/iranian-ips-clean.txt | tr '\n' ',' | sed 's/,$//')
+    nft add element inet filter iranian_blocklist "{ $ELEMENTS }" 2>/dev/null || true
+  changed_when: false
+
+- name: Enable nftables service
+  systemd:
+    name: nftables
+    enabled: yes
+    state: started
+
+- name: Create firewall update script
+  template:
+    src: update-firewall.sh.j2
+    dest: /usr/local/bin/update-firewall.sh
+    mode: '0755'
+
+- name: Create cron job for firewall updates
+  cron:
+    name: "Update Iranian IP blocklist"
+    minute: "0"
+    hour: "3"
+    job: "/usr/local/bin/update-firewall.sh > /var/log/firewall-update.log 2>&1"
+    user: root
+
+- name: Create iptables directory
+  file:
+    path: /etc/iptables
+    state: directory
+    mode: '0755'
+
+- name: Save iptables rules as fallback
+  shell: |
+    iptables-save > /etc/iptables/rules.v4
+    ip6tables-save > /etc/iptables/rules.v6
+  changed_when: false

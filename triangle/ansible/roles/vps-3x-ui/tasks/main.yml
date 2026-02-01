@@ -1,0 +1,64 @@
+---
+- name: Check if 3x-ui is already installed
+  stat:
+    path: /usr/local/x-ui/x-ui
+  register: xui_installed
+
+- name: Download and install 3x-ui
+  shell: |
+    curl -Ls {{ xui_install_url }} -o /tmp/3x-ui-install.sh
+    chmod +x /tmp/3x-ui-install.sh
+    echo -e "y\n\n\n\n\n{{ xui_admin_username }}\n{{ xui_admin_password }}\n{{ xui_port }}\n" | bash /tmp/3x-ui-install.sh
+  args:
+    executable: /bin/bash
+  when: not xui_installed.stat.exists
+  register: xui_install
+  changed_when: "'installation finished' in xui_install.stdout or 'successfully' in xui_install.stdout"
+
+- name: Update 3x-UI credentials if already installed
+  shell: |
+    /usr/local/x-ui/x-ui setting -username {{ xui_admin_username }} -password {{ xui_admin_password }}
+  when: xui_installed.stat.exists
+  ignore_errors: yes
+
+- name: Wait for installation to complete
+  wait_for:
+    timeout: 30
+  when: xui_install.changed
+
+- name: Check if 3x-ui service exists
+  stat:
+    path: /etc/systemd/system/x-ui.service
+  register: xui_service_file
+
+- name: Enable 3x-ui service
+  systemd:
+    name: x-ui
+    enabled: yes
+    daemon_reload: yes
+  when: xui_service_file.stat.exists
+
+- name: Start 3x-ui service
+  systemd:
+    name: x-ui
+    state: started
+  when: xui_service_file.stat.exists
+  register: xui_started
+  ignore_errors: yes
+
+- name: Wait for 3x-ui web interface
+  wait_for:
+    port: "{{ xui_port }}"
+    delay: 5
+    timeout: 60
+  when: xui_started is succeeded
+  ignore_errors: yes
+
+- name: Display 3x-ui installation result
+  debug:
+    msg:
+      - "3x-UI Installation: {{ 'Success' if xui_installed.stat.exists or xui_install.changed else 'Failed' }}"
+      - "Web Panel: http://{{ vps_ip }}:{{ xui_port }}/"
+      - "Username: {{ xui_admin_username }}"
+      - "Password: {{ xui_admin_password }}"
+      - "WARNING: Change password immediately"

@@ -1,0 +1,257 @@
+<mxfile host="app.diagrams.net" modified="2026-02-01T00:00:00.000Z" agent="5.0" version="22.1.11">
+  <diagram name="Network Architecture - Singleton with Starlink" id="singleton-starlink-arch">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title Section -->
+        <mxCell id="title" value="Singleton Architecture - Raspberry Pi Secure WiFi Proxy" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="800" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="subtitle" value="Complete Privacy Gateway: Pi-hole DNS (1.6M+ blocks) + Cloudflared DoH + nftables Firewall (763 Iranian IPs) + Xray/VLESS Proxy" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="400" y="60" width="800" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- Internet Cloud -->
+        <mxCell id="internet" value="PUBLIC&#10;INTERNET" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="50" y="120" width="180" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- Starlink Satellite -->
+        <mxCell id="starlink-sat" value="STARLINK&#10;LEO Satellites" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="50" y="280" width="180" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Connection Internet to Satellite -->
+        <mxCell id="inet-sat" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=3;strokeColor=#9673a6;" edge="1" parent="1" source="internet" target="starlink-sat">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Starlink Terminal -->
+        <mxCell id="starlink-terminal" value="STARLINK TERMINAL&#10;(Dishy McFlatface)&#10;&#10;CGNAT IP: 100.x.x.x&#10;Dynamic, Shared IP&#10;No Port Forwarding" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=0;align=center;verticalRezagn=top;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="50" y="420" width="180" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- Connection Satellite to Terminal -->
+        <mxCell id="sat-term" value="LEO&#10;Downlink" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=3;strokeColor=#9673a6;" edge="1" parent="1" source="starlink-sat" target="starlink-terminal">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Starlink Router -->
+        <mxCell id="starlink-router" value="STARLINK ROUTER&#10;&#10;LAN: 10.0.0.1&#10;DHCP: 10.0.0.2-254&#10;DNS: SpaceX (bypassed)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=0;align=center;verticalRezagn=top;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="50" y="590" width="180" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- Connection Terminal to Router -->
+        <mxCell id="term-router" value="Ethernet" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=3;strokeColor=#d6b656;" edge="1" parent="1" source="starlink-terminal" target="starlink-router">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Home Network Box -->
+        <mxCell id="home-net" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=1;dashPattern=8 8;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="50" y="740" width="180" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="home-label" value="Other Home Devices&#10;(Unprotected)&#10;10.0.0.x" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="70" y="760" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Connection Router to Home -->
+        <mxCell id="router-home" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=2;strokeColor=#666666;dashed=1;" edge="1" parent="1" source="starlink-router" target="home-net">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Raspberry Pi Main Container -->
+        <mxCell id="rpi-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;strokeWidth=4;" vertex="1" parent="1">
+          <mxGeometry x="320" y="120" width="1200" height="900" as="geometry"/>
+        </mxCell>
+        <mxCell id="rpi-title" value="RASPBERRY PI 5 - SECURE PRIVACY GATEWAY" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="620" y="130" width="600" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="rpi-subtitle" value="eth0: 10.0.0.242 (LAN) | wlan0: 10.50.0.1 (Isolated WiFi AP)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="620" y="155" width="600" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- eth0 Interface -->
+        <mxCell id="eth0" value="eth0&#10;10.0.0.242/24&#10;(Upstream to Router)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="350" y="600" width="150" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Connection Router to eth0 -->
+        <mxCell id="router-eth0" value="Ethernet&#10;10.0.0.0/24" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=3;strokeColor=#9673a6;" edge="1" parent="1" source="starlink-router" target="eth0">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- LAYER 1: WiFi Access Point -->
+        <mxCell id="layer1-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="560" y="190" width="900" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="layer1-title" value="LAYER 1: WiFi Access Point (hostapd) - Physical Security" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="570" y="195" width="500" height="25" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="hostapd" value="hostapd&#10;&#10;Interface: wlan0&#10;IP: 10.50.0.1&#10;SSID: SecureProxy-XXXXXXXX&#10;Security: WPA2-PSK (CCMP)&#10;Channel: 6 (2.4GHz)&#10;Country: GB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="580" y="225" width="200" height="95" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dhcp-info" value="DHCP Server (Pi-hole)&#10;&#10;Range: 10.50.0.10 - 10.50.0.250&#10;Gateway: 10.50.0.1&#10;DNS: 10.50.0.1&#10;Lease: 12 hours&#10;Clients: 240 max" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="800" y="225" width="200" height="95" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="wifi-security" value="WiFi Security Features&#10;&#10;• WPA2-PSK with CCMP (AES-256)&#10;• Isolated subnet (10.50.0.0/24)&#10;• Cannot access home LAN (10.0.0.x)&#10;• 24-char random password&#10;• No WPS (disabled)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="1020" y="225" width="220" height="95" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ipv6-disabled" value="IPv6: DISABLED&#10;(Leak Prevention)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;align=center" vertex="1" parent="1">
+          <mxGeometry x="1260" y="255" width="140" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- LAYER 2: DNS Filtering -->
+        <mxCell id="layer2-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="560" y="350" width="900" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="layer2-title" value="LAYER 2: DNS Filtering &amp; Encryption - Privacy Protection" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="570" y="355" width="500" height="25" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="pihole" value="Pi-hole v6&#10;&#10;Port: 53 (DNS)&#10;Port: 80 (Web Admin)&#10;Blocked: 1.6M+ domains&#10;Blocklists: 17 sources&#10;DNSSEC: Enabled&#10;Rate Limit: 1000/60s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b4d7e8;strokeColor=#6c8ebf;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="580" y="385" width="200" height="115" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="cloudflared" value="Cloudflared (DoH)&#10;&#10;Listen: 127.0.0.1:5053&#10;Upstream: Cloudflare 1.1.1.1&#10;Protocol: DNS-over-HTTPS&#10;TLS: 1.3&#10;ISP: Cannot see queries&#10;Bypasses port 53 blocks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b4d7e8;strokeColor=#6c8ebf;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="800" y="385" width="200" height="115" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="blocklists" value="Blocklist Categories&#10;&#10;• StevenBlack/hosts (150K)&#10;• EasyPrivacy (25K)&#10;• Prigent-Ads (50K)&#10;• Phishing Army (30K)&#10;• Malware Domains (20K)&#10;• Iranian Domains (131K+)&#10;  bootmortis/iran-hosted" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b4d7e8;strokeColor=#6c8ebf;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="1020" y="385" width="200" height="115" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dns-flow" value="DNS Flow:&#10;Client → Pi-hole&#10;→ Cloudflared&#10;→ Cloudflare 1.1.1.1&#10;(All encrypted)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="1240" y="385" width="140" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- LAYER 3: Firewall -->
+        <mxCell id="layer3-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="560" y="530" width="900" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="layer3-title" value="LAYER 3: nftables Firewall - Network Security" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="570" y="535" width="500" height="25" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="iranian-block" value="Iranian IP Blocking&#10;&#10;Ranges: 763 CIDR blocks&#10;ISPs: MCI, Irancell, Rightel,&#10;  Shatel, ParsOnline, TCI&#10;Applied to: input, forward,&#10;  output chains&#10;Auto-merge optimized" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="580" y="565" width="200" height="115" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="nat-rules" value="NAT &amp; Routing&#10;&#10;Masquerade: wlan0 → eth0&#10;IP Forwarding: Enabled&#10;Forward: wlan0 ↔ eth0&#10;Connection Tracking: Stateful&#10;Policy: Drop by default" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="800" y="565" width="200" height="115" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="firewall-chains" value="Firewall Chains&#10;&#10;input: Drop, allow established&#10;forward: Drop Iranian, allow&#10;  wlan0↔eth0&#10;output: Accept, drop Iranian&#10;&#10;Logging: Optional" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="1020" y="565" width="200" height="115" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ipv6-block" value="IPv6 Filter&#10;&#10;input: DROP&#10;forward: DROP&#10;output: DROP&#10;&#10;(Complete block)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;fontSize=10;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="1240" y="565" width="140" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- LAYER 4: Proxy -->
+        <mxCell id="layer4-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="560" y="710" width="900" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="layer4-title" value="LAYER 4: Proxy Services (3x-UI / Xray-core) - Traffic Encryption" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="570" y="715" width="500" height="25" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="xui-panel" value="3x-UI Management Panel&#10;&#10;Port: 2053 (HTTPS)&#10;Subscription: 2096&#10;Username: admin&#10;Features:&#10;• Create inbounds&#10;• QR code generation&#10;• Traffic statistics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="580" y="745" width="200" height="115" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="xray-protocols" value="Supported Protocols&#10;&#10;• VLESS (recommended)&#10;• VMess&#10;• Trojan&#10;• Shadowsocks&#10;&#10;Transport: TCP, WS, gRPC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="800" y="745" width="200" height="115" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="reality-protocol" value="Reality Protocol (Anti-DPI)&#10;&#10;• Mimics legitimate TLS&#10;• Defeats deep packet&#10;  inspection&#10;• Used in Iran/China&#10;• Certificate pinning&#10;• No distinguishable fingerprint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="1020" y="745" width="200" height="115" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="singbox" value="sing-box (Alternative)&#10;&#10;SOCKS5: 1080&#10;HTTP: 8080&#10;Mixed: 7890&#10;TUN: 172.19.0.1/30" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;fontSize=10;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="1240" y="745" width="140" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- WiFi Clients Box -->
+        <mxCell id="clients-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#333333;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="560" y="900" width="900" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="clients-title" value="PROTECTED WiFi CLIENTS (10.50.0.x) - All Traffic Secured" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="760" y="905" width="500" height="25" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="client-phone" value="Smartphone&#10;V2RayNG/Shadowrocket&#10;10.50.0.x" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=center" vertex="1" parent="1">
+          <mxGeometry x="600" y="935" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="client-laptop" value="Laptop&#10;Clash/V2RayN&#10;10.50.0.x" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=center" vertex="1" parent="1">
+          <mxGeometry x="760" y="935" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="client-tablet" value="Tablet&#10;Browser Only&#10;10.50.0.x" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=center" vertex="1" parent="1">
+          <mxGeometry x="920" y="935" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="client-iot" value="IoT Devices&#10;DNS Filtered Only&#10;10.50.0.x" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;align=center" vertex="1" parent="1">
+          <mxGeometry x="1080" y="935" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="client-protection" value="All Devices:&#10;• DNS via Pi-hole&#10;• Iranian IPs blocked&#10;• IPv6 disabled" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=3" vertex="1" parent="1">
+          <mxGeometry x="1240" y="930" width="140" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- Traffic Flow Arrows -->
+        <mxCell id="arrow1" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#d79b00;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="920" y="900" as="sourcePoint"/>
+            <mxPoint x="920" y="870" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow2" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#82b366;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="920" y="710" as="sourcePoint"/>
+            <mxPoint x="920" y="690" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow3" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#b85450;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="920" y="530" as="sourcePoint"/>
+            <mxPoint x="920" y="510" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow4" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="920" y="350" as="sourcePoint"/>
+            <mxPoint x="920" y="330" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Security Summary Box -->
+        <mxCell id="security-summary" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="50" y="880" width="180" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="security-title" value="SECURITY SUMMARY" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="60" y="885" width="160" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="security-list" value="✓ DNS: 1.6M+ blocked&#10;✓ Iranian IPs: 763 blocked&#10;✓ Iranian Domains: 131K+&#10;✓ DNS: Encrypted (DoH)&#10;✓ WiFi: WPA2-PSK&#10;✓ IPv6: Disabled&#10;✓ Identity Protection" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=top;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="60" y="905" width="160" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- Copyright -->
+        <mxCell id="copyright" value="© 2026 Iman Samizadeh | MIT License | javid-mask Project | Singleton Architecture with Starlink Terminal" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="400" y="1050" width="800" height="25" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,206 @@
+<mxfile host="app.diagrams.net" modified="2026-01-30T05:30:00.000Z" agent="5.0" version="24.0.0" etag="test-fa" type="device">
+  <diagram name="تهدیدات-حریم-خصوصی-دفاع" id="privacy-defense-diagram-fa">
+    <mxGraphModel dx="1434" dy="844" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="2" value="تهدیدات حریم خصوصی و معماری دفاعی javid-mask" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="284.5" y="20" width="600" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- LEFT SIDE: THREATS -->
+        <mxCell id="3" value="تهدیدات حریم خصوصی" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="240" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- DNS Threats Box -->
+        <mxCell id="4" value="نشت و ردیابی DNS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="240" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="5" value="• ثبت DNS توسط ISP&#xa;• نظارت بر درخواست DNS&#xa;• کنترل دولتی DNS&#xa;• دور زدن DNS از VPN&#xa;• مسمومیت حافظه DNS" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingRight=5" vertex="1" parent="1">
+          <mxGeometry x="45" y="160" width="230" height="85" as="geometry"/>
+        </mxCell>
+
+        <!-- IP Leaks Box -->
+        <mxCell id="6" value="نشت آدرس IP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="40" y="270" width="240" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="7" value="• افشای IP توسط WebRTC&#xa;• نشت IPv6&#xa;• دور زدن تونل VPN&#xa;• نشت سرور STUN/TURN" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingRight=5" vertex="1" parent="1">
+          <mxGeometry x="45" y="290" width="230" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- Network Surveillance Box -->
+        <mxCell id="8" value="نظارت شبکه" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="40" y="380" width="240" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="9" value="• بازرسی عمیق بسته (DPI)&#xa;• تحلیل زمان‌بندی ترافیک&#xa;• هایجک BGP&#xa;• رهگیری HTTPS" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingRight=5" vertex="1" parent="1">
+          <mxGeometry x="45" y="400" width="230" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- Iranian Tracking Box -->
+        <mxCell id="10" value="ردیابی IP/دامنه ایرانی" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="40" y="490" width="240" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="11" value="• 763 محدوده IP ایرانی&#xa;• پروفایل‌سازی رفتاری&#xa;• جمع‌آوری متادیتا&#xa;• سانسور سطح ISP" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingRight=5" vertex="1" parent="1">
+          <mxGeometry x="45" y="510" width="230" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- Application Leaks Box -->
+        <mxCell id="12" value="نشت برنامه‌ها" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="40" y="600" width="240" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="13" value="• اثرانگشت JavaScript&#xa;• اثرانگشت مرورگر&#xa;• نشت رسانه WebRTC&#xa;• ردیابی کوکی" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingRight=5" vertex="1" parent="1">
+          <mxGeometry x="45" y="620" width="230" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- CENTER: USER AT RISK -->
+        <mxCell id="14" value="کاربر&#xa;در معرض&#xa;خطر" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;fontStyle=1;strokeWidth=3" vertex="1" parent="1">
+          <mxGeometry x="464.5" y="385" width="100" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- Threat Arrows (Red) -->
+        <mxCell id="15" value="" style="endArrow=classic;html=1;strokeColor=#CC0000;strokeWidth=3;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0" edge="1" parent="1" source="4" target="14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="290" y="195" as="sourcePoint"/>
+            <mxPoint x="460" y="435" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="16" value="" style="endArrow=classic;html=1;strokeColor=#CC0000;strokeWidth=3;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0" edge="1" parent="1" source="6" target="14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="290" y="315" as="sourcePoint"/>
+            <mxPoint x="474" y="445" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="17" value="" style="endArrow=classic;html=1;strokeColor=#CC0000;strokeWidth=3;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0" edge="1" parent="1" source="8" target="14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="290" y="425" as="sourcePoint"/>
+            <mxPoint x="474" y="445" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="18" value="" style="endArrow=classic;html=1;strokeColor=#CC0000;strokeWidth=3;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0" edge="1" parent="1" source="10" target="14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="290" y="535" as="sourcePoint"/>
+            <mxPoint x="474" y="445" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="19" value="" style="endArrow=classic;html=1;strokeColor=#CC0000;strokeWidth=3;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0" edge="1" parent="1" source="12" target="14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="290" y="645" as="sourcePoint"/>
+            <mxPoint x="474" y="445" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- RIGHT SIDE: DEFENSES -->
+        <mxCell id="20" value="لایه‌های دفاعی javid-mask" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="680" y="80" width="450" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Pi-hole Defense -->
+        <mxCell id="21" value="فیلترینگ DNS با Pi-hole v6" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="680" y="140" width="450" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="22" value="• مسدودسازی 1.6 میلیون+ دامنه مخرب&#xa;• DNS-over-HTTPS از طریق Cloudflared&#xa;• جلوگیری از نشت DNS به ISP&#xa;• اعتبارسنجی DNSSec فعال&#xa;• مسدودسازی دامنه‌های ایرانی" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingRight=5" vertex="1" parent="1">
+          <mxGeometry x="685" y="160" width="440" height="75" as="geometry"/>
+        </mxCell>
+
+        <!-- Proxy Defense -->
+        <mxCell id="23" value="پراکسی 3x-UI Xray (VLESS/VMess)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="680" y="260" width="450" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="24" value="• پروتکل‌های پراکسی رمزشده&#xa;• مبهم‌سازی ترافیک&#xa;• دور زدن DPI/سانسور&#xa;• پروتکل Reality برای استتار TLS" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingRight=5" vertex="1" parent="1">
+          <mxGeometry x="685" y="280" width="440" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- Firewall Defense -->
+        <mxCell id="25" value="فایروال nftables + مسدودسازی IP ایرانی" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="680" y="370" width="450" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="26" value="• 763 محدوده IP ایرانی مسدود شده&#xa;• ردیابی اتصال Stateful&#xa;• NAT با masquerading&#xa;• مسدودسازی زنجیره Forward (حیاتی)&#xa;• به‌روزرسانی روزانه لیست مسدودی" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingRight=5" vertex="1" parent="1">
+          <mxGeometry x="685" y="390" width="440" height="75" as="geometry"/>
+        </mxCell>
+
+        <!-- Network Isolation -->
+        <mxCell id="27" value="جداسازی شبکه" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="680" y="490" width="450" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="28" value="• WiFi AP مجزا (10.50.0.0/24)&#xa;• جدا از LAN خانگی&#xa;• همه ترافیک از طریق DNS با Pi-hole&#xa;• همه اتصالات از طریق پراکسی/فایروال" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingRight=5" vertex="1" parent="1">
+          <mxGeometry x="685" y="510" width="440" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- Hardware Control -->
+        <mxCell id="29" value="کنترل سخت‌افزار و زیرساخت" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="680" y="600" width="450" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="30" value="• جداسازی سخت‌افزاری Raspberry Pi&#xa;• زیرساخت محلی (غیر ابری)&#xa;• شفافیت متن‌باز&#xa;• خط‌مشی عدم ثبت وقایع&#xa;• رمزنگاری کنترل شده توسط کاربر" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingRight=5" vertex="1" parent="1">
+          <mxGeometry x="685" y="620" width="440" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- Defense Arrows (Green Dashed) -->
+        <mxCell id="31" value="" style="endArrow=classic;html=1;strokeColor=#00CC00;strokeWidth=3;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;dashed=1" edge="1" parent="1" source="21" target="14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="670" y="190" as="sourcePoint"/>
+            <mxPoint x="575" y="445" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="32" value="" style="endArrow=classic;html=1;strokeColor=#00CC00;strokeWidth=3;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;dashed=1" edge="1" parent="1" source="23" target="14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="690" y="200" as="sourcePoint"/>
+            <mxPoint x="575" y="445" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="33" value="" style="endArrow=classic;html=1;strokeColor=#00CC00;strokeWidth=3;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;dashed=1" edge="1" parent="1" source="25" target="14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="690" y="315" as="sourcePoint"/>
+            <mxPoint x="575" y="445" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="34" value="" style="endArrow=classic;html=1;strokeColor=#00CC00;strokeWidth=3;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;dashed=1" edge="1" parent="1" source="27" target="14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="690" y="430" as="sourcePoint"/>
+            <mxPoint x="575" y="445" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="35" value="" style="endArrow=classic;html=1;strokeColor=#00CC00;strokeWidth=3;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;dashed=1" edge="1" parent="1" source="29" target="14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="690" y="545" as="sourcePoint"/>
+            <mxPoint x="575" y="445" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Legend Box -->
+        <mxCell id="36" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;strokeWidth=2" vertex="1" parent="1">
+          <mxGeometry x="380" y="720" width="280" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="37" value="راهنما" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="450" y="725" width="140" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="38" value="" style="endArrow=classic;html=1;strokeColor=#CC0000;strokeWidth=3" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="757" as="sourcePoint"/>
+            <mxPoint x="460" y="757" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="39" value="بردار تهدید" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingRight=5" vertex="1" parent="1">
+          <mxGeometry x="470" y="747" width="100" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="40" value="" style="endArrow=classic;html=1;strokeColor=#00CC00;strokeWidth=3;dashed=1" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="775" as="sourcePoint"/>
+            <mxPoint x="460" y="775" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="41" value="لایه دفاعی" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingRight=5" vertex="1" parent="1">
+          <mxGeometry x="470" y="765" width="100" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Copyright -->
+        <mxCell id="42" value="© 1404 ایمان سمیع‌زاده | مجوز MIT | https://github.com/Iman/javid-mask" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="384.5" y="800" width="400" height="20" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

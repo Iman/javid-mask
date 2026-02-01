@@ -1,0 +1,5 @@
+---
+- name: restart health-endpoint
+  systemd:
+    name: health-endpoint
+    state: restarted

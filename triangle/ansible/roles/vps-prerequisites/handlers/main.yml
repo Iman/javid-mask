@@ -1,0 +1,5 @@
+---
+- name: reload ufw
+  systemd:
+    name: ufw
+    state: reloaded

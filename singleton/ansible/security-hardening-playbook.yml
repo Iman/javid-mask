@@ -1,0 +1,40 @@
+---
+- name: Apply DNS Security Hardening (Run AFTER main deployment)
+  hosts: raspberry_pi
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Display security hardening start
+      debug:
+        msg:
+          - "=========================================="
+          - "Applying DNS Security Hardening"
+          - "=========================================="
+          - "This will:"
+          - "  - Install and configure Cloudflared (DNS-over-HTTPS)"
+          - "  - Enable DNSSec validation"
+          - "  - Configure DNS leak prevention"
+          - "  - Add security-focused blocklists"
+          - "=========================================="
+
+    - name: Include Pi-hole DNS security hardening
+      include_role:
+        name: pihole
+        tasks_from: security-hardening.yml
+
+    - name: Display security hardening completion
+      debug:
+        msg:
+          - "=========================================="
+          - "DNS Security Hardening Complete!"
+          - "=========================================="
+          - "✓ DNS-over-HTTPS enabled via Cloudflared"
+          - "✓ DNSSec validation enabled"
+          - "✓ DNS leak prevention configured"
+          - "✓ Security blocklists added"
+          - "=========================================="
+          - "Test your DNS security:"
+          - "  - https://dnsleaktest.com (should show Cloudflare)"
+          - "  - https://dnssec.vs.uni-due.de (should pass)"
+          - "=========================================="

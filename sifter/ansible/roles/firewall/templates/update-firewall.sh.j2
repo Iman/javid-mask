@@ -1,0 +1,66 @@
+#!/bin/bash
+# Sifter Firewall Update Script
+# Updates Iranian IP blocklist from upstream sources
+
+set -e
+
+LOG_FILE="{{ alert_log_path }}/firewall-update.log"
+IP_FILE="/etc/sifter-iranian-ips.txt"
+TEMP_FILE="/tmp/sifter-iranian-ips-new.txt"
+
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+log "Starting Sifter firewall update..."
+
+# Download fresh IP list
+curl -s -o "$TEMP_FILE" "{{ iranian_ip_sources[0] }}" || {
+    log "ERROR: Failed to download IP blocklist"
+    exit 1
+}
+
+# Validate downloaded file
+if [ ! -s "$TEMP_FILE" ]; then
+    log "ERROR: Downloaded file is empty"
+    exit 1
+fi
+
+# Count CIDRs
+NEW_COUNT=$(wc -l < "$TEMP_FILE" | tr -d ' ')
+log "Downloaded $NEW_COUNT CIDR ranges"
+
+# Backup old file
+if [ -f "$IP_FILE" ]; then
+    cp "$IP_FILE" "${IP_FILE}.bak"
+fi
+
+# Replace with new file
+mv "$TEMP_FILE" "$IP_FILE"
+
+# Build nftables elements
+ELEMENTS=""
+while IFS= read -r cidr; do
+    # Skip comments and empty lines
+    [[ "$cidr" =~ ^#.*$ ]] && continue
+    [[ -z "$cidr" ]] && continue
+    # Add to elements list
+    if [ -z "$ELEMENTS" ]; then
+        ELEMENTS="$cidr"
+    else
+        ELEMENTS="$ELEMENTS, $cidr"
+    fi
+done < "$IP_FILE"
+
+# Update nftables set
+nft flush set inet sifter iranian_blocklist 2>/dev/null || true
+nft add element inet sifter iranian_blocklist { $ELEMENTS } 2>/dev/null || {
+    log "ERROR: Failed to update nftables set"
+    exit 1
+}
+
+# Verify
+LOADED_COUNT=$(nft list set inet sifter iranian_blocklist 2>/dev/null | grep -c "/" || echo "0")
+log "Updated firewall with $LOADED_COUNT CIDR ranges"
+
+log "Sifter firewall update complete"

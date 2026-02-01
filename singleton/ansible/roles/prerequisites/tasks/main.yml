@@ -1,0 +1,89 @@
+---
+- name: Configure temporary DNS for initial setup
+  copy:
+    dest: /etc/resolv.conf
+    content: |
+      nameserver 8.8.8.8
+      nameserver 1.1.1.1
+    mode: '0644'
+  when: ansible_dns.nameservers is not defined or ansible_dns.nameservers | length == 0
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Upgrade all packages
+  apt:
+    upgrade: safe
+    autoremove: yes
+    autoclean: yes
+  when: false
+
+- name: Install essential packages
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+      - git
+      - vim
+      - htop
+      - net-tools
+      - iptables
+      - nftables
+      - iptables-persistent
+      - netfilter-persistent
+      - dnsutils
+      - tcpdump
+      - wget
+      - unzip
+      - jq
+      - python3
+      - python3-pip
+      - rfkill
+      - wireless-tools
+      - wpasupplicant
+      - bridge-utils
+    state: present
+
+- name: Enable IP forwarding (sysctl)
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Enable IPv6 forwarding
+  sysctl:
+    name: net.ipv6.conf.all.forwarding
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Disable IPv6 on WiFi interface (optional security)
+  sysctl:
+    name: "net.ipv6.conf.{{ wifi_interface }}.disable_ipv6"
+    value: '0'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Ensure rfkill is unblocked for WiFi
+  command: rfkill unblock wifi
+  changed_when: false
+
+- name: Create working directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /opt/singbox
+    - /opt/blocklists
+    - /etc/nftables
+    - /var/log/proxy

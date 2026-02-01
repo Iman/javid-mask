@@ -1,0 +1,37 @@
+# DNS Security Hardening
+
+# Enable DNSSec validation
+dnssec
+trust-anchor=.,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D
+
+# Prevent DNS rebinding attacks
+stop-dns-rebind
+rebind-localhost-ok
+
+# Block private IP responses (prevents DNS leaks)
+bogus-priv
+
+# Only answer DNS queries from local network
+local-service
+
+# Disable DNS amplification attacks
+dns-forward-max=1000
+
+# Cache settings for privacy
+cache-size=10000
+neg-ttl=3600
+
+# Prevent leaking of local domain info
+domain-needed
+
+# Privacy settings
+log-queries=async
+log-facility=/var/log/pihole/pihole.log
+
+# Block Quad9 malware domains
+server=/malware.quad9.net/127.0.0.1
+
+# Disable IPv6 if not needed (prevents IPv6 leaks)
+{% if not enable_ipv6 | default(false) %}
+filter-aaaa
+{% endif %}

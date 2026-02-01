@@ -1,0 +1,103 @@
+---
+- name: Check cloudflared installation
+  ansible.builtin.stat:
+    path: /usr/local/bin/cloudflared
+  register: cloudflared_binary
+
+- name: Get system architecture
+  ansible.builtin.set_fact:
+    cloudflared_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'arm' }}"
+
+- name: Download cloudflared
+  ansible.builtin.get_url:
+    url: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-{{ cloudflared_arch }}"
+    dest: /usr/local/bin/cloudflared
+    mode: '0755'
+    owner: root
+    group: root
+  when: not cloudflared_binary.stat.exists
+  notify: Restart cloudflared
+
+- name: Create cloudflared user
+  ansible.builtin.user:
+    name: cloudflared
+    system: yes
+    shell: /usr/sbin/nologin
+    home: /var/lib/cloudflared
+    create_home: no
+
+- name: Create cloudflared configuration directory
+  ansible.builtin.file:
+    path: /etc/cloudflared
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Configure cloudflared
+  ansible.builtin.template:
+    src: cloudflared.yml.j2
+    dest: /etc/cloudflared/config.yml
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart cloudflared
+
+- name: Create cloudflared systemd service
+  ansible.builtin.copy:
+    content: |
+      [Unit]
+      Description=Cloudflared DNS-over-HTTPS proxy
+      Documentation=https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+      After=network.target network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=simple
+      User=cloudflared
+      ExecStart=/usr/local/bin/cloudflared proxy-dns --config /etc/cloudflared/config.yml
+      Restart=on-failure
+      RestartSec=10
+      KillMode=process
+      LimitNOFILE=65536
+
+      # Security hardening
+      NoNewPrivileges=yes
+      ProtectSystem=strict
+      ProtectHome=yes
+      PrivateTmp=yes
+      PrivateDevices=yes
+      ProtectKernelTunables=yes
+      ProtectKernelModules=yes
+      ProtectControlGroups=yes
+      ReadWritePaths=
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/cloudflared.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart cloudflared
+
+- name: Enable and start cloudflared
+  ansible.builtin.systemd:
+    name: cloudflared
+    enabled: yes
+    state: started
+    daemon_reload: yes
+
+- name: Wait for cloudflared to be ready
+  ansible.builtin.wait_for:
+    port: "{{ cloudflared_port }}"
+    host: 127.0.0.1
+    delay: 2
+    timeout: 30
+
+- name: Verify cloudflared is responding
+  ansible.builtin.command: dig @127.0.0.1 -p {{ cloudflared_port }} cloudflare.com +short
+  register: cloudflared_test
+  changed_when: false
+  failed_when: cloudflared_test.rc != 0

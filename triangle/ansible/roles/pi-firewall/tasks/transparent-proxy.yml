@@ -1,0 +1,64 @@
+---
+- name: Install iptables-persistent for transparent proxy
+  apt:
+    name:
+      - iptables-persistent
+      - netfilter-persistent
+    state: present
+
+- name: Create iptables rules for transparent proxy (TCP via redsocks)
+  shell: |
+    iptables -t nat -N REDSOCKS 2>/dev/null || true
+    iptables -t nat -F REDSOCKS
+    
+    iptables -t nat -A REDSOCKS -d 0.0.0.0/8 -j RETURN
+    iptables -t nat -A REDSOCKS -d 10.0.0.0/8 -j RETURN
+    iptables -t nat -A REDSOCKS -d 127.0.0.0/8 -j RETURN
+    iptables -t nat -A REDSOCKS -d 169.254.0.0/16 -j RETURN
+    iptables -t nat -A REDSOCKS -d 172.16.0.0/12 -j RETURN
+    iptables -t nat -A REDSOCKS -d 192.168.0.0/16 -j RETURN
+    iptables -t nat -A REDSOCKS -d 224.0.0.0/4 -j RETURN
+    iptables -t nat -A REDSOCKS -d 240.0.0.0/4 -j RETURN
+    
+    iptables -t nat -A REDSOCKS -p tcp -j REDIRECT --to-ports 12345
+  changed_when: false
+
+- name: Create iptables rules for transparent proxy (UDP via Xray)
+  shell: |
+    iptables -t nat -N XRAY_UDP 2>/dev/null || true
+    iptables -t nat -F XRAY_UDP
+    
+    iptables -t nat -A XRAY_UDP -d 0.0.0.0/8 -j RETURN
+    iptables -t nat -A XRAY_UDP -d 10.0.0.0/8 -j RETURN
+    iptables -t nat -A XRAY_UDP -d 127.0.0.0/8 -j RETURN
+    iptables -t nat -A XRAY_UDP -d 169.254.0.0/16 -j RETURN
+    iptables -t nat -A XRAY_UDP -d 172.16.0.0/12 -j RETURN
+    iptables -t nat -A XRAY_UDP -d 192.168.0.0/16 -j RETURN
+    iptables -t nat -A XRAY_UDP -d 224.0.0.0/4 -j RETURN
+    iptables -t nat -A XRAY_UDP -d 240.0.0.0/4 -j RETURN
+    
+    iptables -t nat -A XRAY_UDP -p udp -j REDIRECT --to-ports 10808
+  changed_when: false
+
+- name: Apply transparent proxy rules to wlan0 traffic
+  shell: |
+    iptables -t nat -D PREROUTING -i {{ wifi_interface }} -p tcp -j REDSOCKS 2>/dev/null || true
+    iptables -t nat -D PREROUTING -i {{ wifi_interface }} -p udp ! --dport 53 -j XRAY_UDP 2>/dev/null || true
+    
+    iptables -t nat -I PREROUTING -i {{ wifi_interface }} -p tcp -j REDSOCKS
+    iptables -t nat -I PREROUTING -i {{ wifi_interface }} -p udp ! --dport 53 -j XRAY_UDP
+  changed_when: false
+
+- name: Save iptables rules
+  shell: |
+    netfilter-persistent save
+  changed_when: false
+
+- name: Create iptables restore script
+  copy:
+    dest: /usr/local/bin/restore-proxy-rules.sh
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      iptables-restore < /etc/iptables/rules.v4
+      echo "Transparent proxy iptables rules restored"

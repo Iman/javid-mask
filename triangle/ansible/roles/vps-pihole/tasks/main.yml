@@ -1,0 +1,153 @@
+---
+- name: Check if Pi-hole is already installed
+  stat:
+    path: /usr/local/bin/pihole
+  register: pihole_installed
+
+- name: Create blocklists directory
+  file:
+    path: /opt/blocklists
+    state: directory
+    mode: '0755'
+
+- name: Download Pi-hole installer
+  get_url:
+    url: https://install.pi-hole.net
+    dest: /tmp/pihole-install.sh
+    mode: '0755'
+  when: not pihole_installed.stat.exists
+
+- name: Create Pi-hole config directory
+  file:
+    path: /etc/pihole
+    state: directory
+    mode: '0755'
+  when: not pihole_installed.stat.exists
+
+- name: Create Pi-hole setup configuration
+  copy:
+    dest: /etc/pihole/setupVars.conf
+    mode: '0644'
+    content: |
+      PIHOLE_INTERFACE={{ vps_interface }}
+      IPV4_ADDRESS={{ vps_ip }}/24
+      IPV6_ADDRESS=
+      QUERY_LOGGING=true
+      INSTALL_WEB_SERVER=true
+      INSTALL_WEB_INTERFACE=true
+      LIGHTTPD_ENABLED=true
+      CACHE_SIZE=10000
+      DNS_FQDN_REQUIRED=true
+      DNS_BOGUS_PRIV=true
+      DNSMASQ_LISTENING=all
+      WEBPASSWORD={{ vps_pihole_web_password | hash('sha256') | hash('sha256') }}
+      BLOCKING_ENABLED=true
+      PIHOLE_DNS_1=127.0.0.1#{{ vps_cloudflared_dns_port }}
+      PIHOLE_DNS_2=
+      PIHOLE_DNS_3=
+      PIHOLE_DNS_4=
+      DNS_REVERSE_LOOKUPS=false
+      DNSSEC=true
+  when: not pihole_installed.stat.exists
+
+- name: Install Pi-hole
+  shell: |
+    export PIHOLE_SKIP_OS_CHECK=true
+    curl -sSL https://install.pi-hole.net | bash /dev/stdin --unattended
+  args:
+    creates: /usr/local/bin/pihole
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  when: not pihole_installed.stat.exists
+
+- name: Set Pi-hole web password
+  command: "pihole -a -p {{ vps_pihole_web_password }}"
+  no_log: true
+  changed_when: false
+
+- name: Download Iranian domain blocklist
+  get_url:
+    url: "{{ item }}"
+    dest: "/opt/blocklists/iranian-domains-{{ ansible_loop.index }}.txt"
+    mode: '0644'
+  loop: "{{ iranian_domain_sources }}"
+  loop_control:
+    extended: yes
+  ignore_errors: yes
+
+- name: Combine Iranian domain blocklists
+  shell: |
+    cat /opt/blocklists/iranian-domains-*.txt 2>/dev/null | sort -u > /opt/blocklists/iranian-domains-combined.txt || true
+  changed_when: false
+
+- name: Install sqlite3 for database management
+  apt:
+    name: sqlite3
+    state: present
+
+- name: Add comprehensive security blocklists to Pi-hole database
+  shell: |
+    sqlite3 /etc/pihole/gravity.db << 'EOF'
+    INSERT OR IGNORE INTO adlist (address, enabled, comment) VALUES
+    ("https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", 1, "StevenBlack Unified"),
+    ("https://raw.githubusercontent.com/kboghdady/youTube_ads_4_pi-hole/master/crowed_list.txt", 1, "YouTube ads"),
+    ("https://blocklistproject.github.io/Lists/phishing.txt", 1, "Phishing"),
+    ("https://blocklistproject.github.io/Lists/porn.txt", 1, "Porn"),
+    ("https://blocklistproject.github.io/Lists/redirect.txt", 1, "Redirects"),
+    ("https://blocklistproject.github.io/Lists/tiktok.txt", 1, "TikTok"),
+    ("https://blocklistproject.github.io/Lists/tracking.txt", 1, "Tracking"),
+    ("https://blocklistproject.github.io/Lists/abuse.txt", 1, "Abuse"),
+    ("https://blocklistproject.github.io/Lists/ads.txt", 1, "Ads"),
+    ("https://blocklistproject.github.io/Lists/malware.txt", 1, "Malware"),
+    ("https://blocklistproject.github.io/Lists/ransomware.txt", 1, "Ransomware"),
+    ("https://phishing.army/download/phishing_army_blocklist.txt", 1, "Phishing Army"),
+    ("https://mirror1.malwaredomains.com/files/justdomains", 1, "Malware Domains"),
+    ("https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt", 1, "Malvertising"),
+    ("https://v.firebog.net/hosts/Easyprivacy.txt", 1, "Privacy"),
+    ("https://v.firebog.net/hosts/Prigent-Ads.txt", 1, "Ads"),
+    ("https://phishing.army/download/phishing_army_blocklist_extended.txt", 1, "Phishing Extended"),
+    ("https://raw.githubusercontent.com/Spam404/lists/master/main-blacklist.txt", 1, "Spam"),
+    ("https://zerodot1.gitlab.io/CoinBlockerLists/hosts_browser", 1, "Crypto miners"),
+    ("https://v.firebog.net/hosts/static/w3kbl.txt", 1, "Smart TV tracking"),
+    ("file:///opt/blocklists/iranian-domains-combined.txt", 1, "Iranian Domains");
+    EOF
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+- name: Update Pi-hole gravity
+  command: pihole -g
+  changed_when: false
+  ignore_errors: yes
+
+- name: Configure Pi-hole DNS settings
+  lineinfile:
+    path: /etc/pihole/pihole-FTL.conf
+    line: "{{ item }}"
+    create: yes
+    mode: '0644'
+  loop:
+    - "DNSSEC=true"
+    - "RATE_LIMIT=1000/60"
+    - "BLOCK_ICLOUD_PR=true"
+    - "MOZILLA_CANARY=true"
+    - "EDNS0_ECS=false"
+    - "PRIVACYLEVEL=0"
+    - "REPLY_ADDR4=10.0.0.1"
+
+- name: Configure Pi-hole to listen on WireGuard interface
+  copy:
+    dest: /etc/dnsmasq.d/99-wireguard.conf
+    mode: '0644'
+    content: |
+      # Listen on WireGuard interface for VPN clients
+      interface=wg0
+      listen-address=10.0.0.1
+      bind-interfaces
+
+- name: Restart Pi-hole to apply WireGuard interface binding
+  systemd:
+    name: pihole-FTL
+    enabled: yes
+    state: restarted
+    daemon_reload: yes

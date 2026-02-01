@@ -1,0 +1,5 @@
+---
+- name: restart health-check
+  systemd:
+    name: health-check
+    state: restarted

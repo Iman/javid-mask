@@ -1,0 +1,217 @@
+<mxfile host="app.diagrams.net" modified="2026-02-01T00:00:00.000Z" agent="5.0" version="22.1.11">
+  <diagram name="Leak Protection - Singleton" id="leak-protection-singleton">
+    <mxGraphModel dx="1800" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="Privacy Threats vs Defence Layers - Singleton Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="800" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="subtitle" value="Comprehensive Leak Protection: Network-Level (Automatic) + Browser-Level (User Configuration Required)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="400" y="55" width="800" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- THREATS SECTION -->
+        <mxCell id="threats-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="280" height="650" as="geometry"/>
+        </mxCell>
+        <mxCell id="threats-title" value="PRIVACY THREATS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="80" y="110" width="200" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- DNS Leaks -->
+        <mxCell id="dns-threat" value="DNS LEAKS &amp; TRACKING" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="55" y="150" width="250" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="dns-threat-details" value="• ISP DNS logging&#10;• DNS query monitoring&#10;• Government DNS control&#10;• VPN DNS bypass&#10;• DNS cache poisoning" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5" vertex="1" parent="1">
+          <mxGeometry x="60" y="175" width="240" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- IP Leaks -->
+        <mxCell id="ip-threat" value="IP ADDRESS LEAKS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="55" y="255" width="250" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="ip-threat-details" value="• WebRTC IP exposure&#10;• IPv6 leaks&#10;• VPN tunnel bypass&#10;• STUN/TURN server leaks&#10;• Torrent DHT exposure" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5" vertex="1" parent="1">
+          <mxGeometry x="60" y="280" width="240" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- Network Surveillance -->
+        <mxCell id="network-threat" value="NETWORK SURVEILLANCE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="55" y="360" width="250" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="network-threat-details" value="• Deep Packet Inspection&#10;• Traffic timing analysis&#10;• BGP hijacking&#10;• HTTPS interception&#10;• Protocol fingerprinting" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5" vertex="1" parent="1">
+          <mxGeometry x="60" y="385" width="240" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- Iranian Tracking -->
+        <mxCell id="iranian-threat" value="IRANIAN IP/DOMAIN TRACKING" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="55" y="465" width="250" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="iranian-threat-details" value="• 763 Iranian IP ranges&#10;• 131,576+ Iranian domains&#10;• Cookie correlation attacks&#10;• Identity exposure via Starlink&#10;• ISP-level censorship" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5" vertex="1" parent="1">
+          <mxGeometry x="60" y="490" width="240" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- Application Leaks -->
+        <mxCell id="app-threat" value="APPLICATION LEAKS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5c6c6;strokeColor=#b85450;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="55" y="570" width="250" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="app-threat-details" value="• JavaScript fingerprinting&#10;• Browser fingerprinting&#10;• WebRTC media leaks&#10;• Cookie tracking&#10;• Canvas/WebGL fingerprinting" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5" vertex="1" parent="1">
+          <mxGeometry x="60" y="595" width="240" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- ARROWS -->
+        <mxCell id="arrow1" value="" style="endArrow=classic;html=1;strokeWidth=4;strokeColor=#82b366;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="320" y="200" as="sourcePoint"/>
+            <mxPoint x="400" y="200" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow2" value="" style="endArrow=classic;html=1;strokeWidth=4;strokeColor=#82b366;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="320" y="300" as="sourcePoint"/>
+            <mxPoint x="400" y="300" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow3" value="" style="endArrow=classic;html=1;strokeWidth=4;strokeColor=#82b366;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="320" y="400" as="sourcePoint"/>
+            <mxPoint x="400" y="400" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow4" value="" style="endArrow=classic;html=1;strokeWidth=4;strokeColor=#82b366;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="320" y="510" as="sourcePoint"/>
+            <mxPoint x="400" y="510" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow5" value="" style="endArrow=classic;html=1;strokeWidth=4;strokeColor=#d79b00;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="320" y="620" as="sourcePoint"/>
+            <mxPoint x="400" y="620" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- NETWORK DEFENCES SECTION -->
+        <mxCell id="network-def-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="400" y="100" width="380" height="550" as="geometry"/>
+        </mxCell>
+        <mxCell id="network-def-title" value="NETWORK LEVEL DEFENCE" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="450" y="110" width="280" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="network-def-status" value="✅ AUTOMATIC - No User Action Required" style="text;html=1;strokeColor=none;fillColor=#c8e6c9;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=1;fontSize=12;fontStyle=1;fontColor=#2e7d32;" vertex="1" parent="1">
+          <mxGeometry x="440" y="140" width="300" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- Pi-hole DNS -->
+        <mxCell id="pihole-def" value="Pi-hole DNS Filtering" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="420" y="175" width="340" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="pihole-def-details" value="• All DNS via Pi-hole (10.50.0.1:53)&#10;• 1.6M+ malicious domains blocked&#10;• 131,576+ Iranian domains blocked&#10;• Upstream: Cloudflared DoH (encrypted)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5" vertex="1" parent="1">
+          <mxGeometry x="425" y="195" width="330" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- IPv6 Block -->
+        <mxCell id="ipv6-def" value="IPv6 Complete Block" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="420" y="265" width="340" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="ipv6-def-details" value="• nftables ip6 filter: DROP all&#10;• input chain: DROP&#10;• forward chain: DROP&#10;• output chain: DROP (no IPv6 leaks)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5" vertex="1" parent="1">
+          <mxGeometry x="425" y="285" width="330" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Iranian IP Block -->
+        <mxCell id="iranian-def" value="Iranian IP/Domain Blocking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="420" y="355" width="340" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="iranian-def-details" value="• 763 CIDR ranges (nftables firewall)&#10;• 131,576+ domains (Pi-hole DNS)&#10;• Prevents cookie/fingerprint correlation&#10;• Protects Starlink users from exposure" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5" vertex="1" parent="1">
+          <mxGeometry x="425" y="375" width="330" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- DoH Encryption -->
+        <mxCell id="doh-def" value="DNS-over-HTTPS (Cloudflared)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="420" y="445" width="340" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="doh-def-details" value="• DNS encrypted with TLS 1.3&#10;• ISP cannot see DNS queries&#10;• Upstream: Cloudflare 1.1.1.1&#10;• DNSSEC validation enabled" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5" vertex="1" parent="1">
+          <mxGeometry x="425" y="465" width="330" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Firewall -->
+        <mxCell id="firewall-def" value="Stateful Firewall (nftables)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="420" y="535" width="340" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="firewall-def-details" value="• Connection tracking (stateful)&#10;• Default DROP policy&#10;• NAT masquerade for WiFi&#10;• Anti-DPI via VLESS/Reality proxy" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5" vertex="1" parent="1">
+          <mxGeometry x="425" y="555" width="330" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- BROWSER DEFENCES SECTION -->
+        <mxCell id="browser-def-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="800" y="100" width="380" height="550" as="geometry"/>
+        </mxCell>
+        <mxCell id="browser-def-title" value="BROWSER LEVEL DEFENCE" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="850" y="110" width="280" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="browser-def-status" value="⚠️ MANUAL - User Configuration Required" style="text;html=1;strokeColor=none;fillColor=#ffd9b3;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=1;fontSize=12;fontStyle=1;fontColor=#e65100;" vertex="1" parent="1">
+          <mxGeometry x="840" y="140" width="300" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- WebRTC -->
+        <mxCell id="webrtc-def" value="WebRTC Leak Prevention" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd9b3;strokeColor=#d79b00;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="820" y="175" width="340" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="webrtc-def-details" value="Firefox: about:config&#10;  media.peerconnection.enabled → false&#10;Chrome: WebRTC Leak Prevent extension&#10;Mobile: Firefox Focus or Brave Browser" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="825" y="195" width="330" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Fingerprinting -->
+        <mxCell id="fingerprint-def" value="Anti-Fingerprinting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd9b3;strokeColor=#d79b00;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="820" y="265" width="340" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="fingerprint-def-details" value="Firefox: about:config&#10;  privacy.resistFingerprinting → true&#10;Extensions: NoScript, Canvas Blocker&#10;Browser: Use Tor Browser for high-risk" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="825" y="285" width="330" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Cookie Control -->
+        <mxCell id="cookie-def" value="Cookie &amp; Tracker Control" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd9b3;strokeColor=#d79b00;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="820" y="355" width="340" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="cookie-def-details" value="Extensions:&#10;  • uBlock Origin (ad/tracker blocking)&#10;  • Cookie AutoDelete&#10;  • Privacy Badger" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="825" y="375" width="330" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- HTTPS -->
+        <mxCell id="https-def" value="HTTPS Enforcement" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd9b3;strokeColor=#d79b00;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="820" y="445" width="340" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="https-def-details" value="Extensions:&#10;  • HTTPS Everywhere&#10;  • Smart HTTPS&#10;Browser: Enable HTTPS-Only Mode" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="825" y="465" width="330" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Additional -->
+        <mxCell id="additional-def" value="Additional Hardening" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd9b3;strokeColor=#d79b00;align=left;verticalRezagn=top;fontSize=12;fontStyle=1;spacingLeft=5;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="820" y="535" width="340" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="additional-def-details" value="Firefox: about:config&#10;  geo.enabled → false&#10;  dom.battery.enabled → false&#10;  network.dns.disableIPv6 → true" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=5;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="825" y="555" width="330" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- PROTECTION STATUS LEGEND -->
+        <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="400" y="680" width="780" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend-title" value="PROTECTION STATUS SUMMARY" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="640" y="685" width="300" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend-items" value="✅ DNS Leak: PROTECTED (Pi-hole + DoH)    ✅ IPv6 Leak: PROTECTED (nftables DROP)    ✅ Iranian Tracking: PROTECTED (763 IPs + 131K domains)&#10;⚠️ WebRTC Leak: Browser config needed    ⚠️ Fingerprinting: Browser extensions needed    ⚠️ Cookie Tracking: Browser extensions needed" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="420" y="710" width="740" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Copyright -->
+        <mxCell id="copyright" value="2026 Iman Samizadeh | MIT License | javid-mask Project | Singleton Architecture - Leak Protection Overview" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="400" y="780" width="800" height="25" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

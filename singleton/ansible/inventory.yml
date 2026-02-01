@@ -1,0 +1,13 @@
+# MIT License
+# Copyright (c) 2026 Iman Samizadeh
+# See LICENSE file in the project root for full license text.
+
+all:
+  hosts:
+    raspberry_pi:
+      ansible_host: 10.0.0.242
+      ansible_user: admin
+      ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+      ansible_become: yes
+      ansible_become_method: sudo
+      ansible_python_interpreter: /usr/bin/python3

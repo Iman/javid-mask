@@ -1,0 +1,57 @@
+#!/bin/bash
+
+set -e
+
+BLOCKLIST_DIR="/opt/blocklists"
+NFTABLES_DIR="/etc/nftables"
+LOG_FILE="/var/log/firewall-update.log"
+
+echo "[$(date)] Starting firewall update" | tee -a "$LOG_FILE"
+
+cd "$BLOCKLIST_DIR"
+
+{% for url in iranian_ip_sources %}
+curl -sSL "{{ url }}" > "iranian-ips-{{ loop.index }}.txt.new" || echo "Failed to download {{ url }}" | tee -a "$LOG_FILE"
+{% endfor %}
+
+cat iranian-ips-*.txt.new | \
+    grep -E '^[0-9]' | \
+    sort -u | \
+    grep -E '^([0-9]{1,3}\.){3}[0-9]{1,3}(/[0-9]{1,2})?' > iranian-ips-combined.txt.new
+
+if [ -s iranian-ips-combined.txt.new ]; then
+    mv iranian-ips-combined.txt.new iranian-ips-combined.txt
+    rm -f iranian-ips-*.txt.new
+
+    echo "define iranian_ips = {" > "$NFTABLES_DIR/iranian-ips.nft.new"
+    cat iranian-ips-combined.txt | sed 's/^/  /' | sed 's/$/,/' >> "$NFTABLES_DIR/iranian-ips.nft.new"
+    echo "}" >> "$NFTABLES_DIR/iranian-ips.nft.new"
+
+    mv "$NFTABLES_DIR/iranian-ips.nft.new" "$NFTABLES_DIR/iranian-ips.nft"
+
+    systemctl reload nftables
+
+    echo "[$(date)] Firewall updated successfully" | tee -a "$LOG_FILE"
+else
+    echo "[$(date)] Failed to generate IP list" | tee -a "$LOG_FILE"
+    rm -f iranian-ips-*.txt.new
+    exit 1
+fi
+
+{% for url in iranian_domain_sources %}
+curl -sSL "{{ url }}" > "iranian-domains-{{ loop.index }}.txt.new" || echo "Failed to download {{ url }}" | tee -a "$LOG_FILE"
+{% endfor %}
+
+cat iranian-domains-*.txt.new | sort -u > iranian-domains-combined.txt.new
+
+if [ -s iranian-domains-combined.txt.new ]; then
+    mv iranian-domains-combined.txt.new iranian-domains-combined.txt
+    rm -f iranian-domains-*.txt.new
+
+    pihole -g
+
+    echo "[$(date)] Pi-hole blocklist updated successfully" | tee -a "$LOG_FILE"
+else
+    echo "[$(date)] Failed to update domain blocklist" | tee -a "$LOG_FILE"
+    rm -f iranian-domains-*.txt.new
+fi

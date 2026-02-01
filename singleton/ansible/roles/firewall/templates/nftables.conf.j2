@@ -1,0 +1,100 @@
+#!/usr/sbin/nft -f
+
+flush ruleset
+
+include "/etc/nftables/iranian-ips.nft"
+
+table inet filter {
+    set iranian_blocklist {
+        type ipv4_addr
+        flags interval
+        elements = $iranian_ips
+    }
+
+    chain input {
+        type filter hook input priority filter; policy drop;
+
+        ct state invalid drop
+        ct state {established, related} accept
+
+        iif "lo" accept
+
+        ip saddr @iranian_blocklist counter drop comment "Block Iranian IPs inbound"
+
+        iif "{{ wifi_interface }}" ip saddr {{ wifi_network }} accept
+        iif "{{ ethernet_interface }}" accept
+
+        icmp type echo-request limit rate 5/second accept
+
+        tcp dport { 22, 80, 443, {{ pihole_dns_port }}, {{ sing_box_port }}, {{ sing_box_http_port }}, {{ sing_box_mixed_port }}, {{ xui_port }}, {{ xui_subscription_port }}, 10443 } accept
+        udp dport { {{ pihole_dns_port }}, 67, 68 } accept
+
+        counter drop
+    }
+
+    chain forward {
+        type filter hook forward priority filter; policy drop;
+
+        ct state invalid drop
+        ct state {established, related} accept
+
+        ip saddr @iranian_blocklist counter drop comment "Block Iranian IPs forward out"
+        ip daddr @iranian_blocklist counter drop comment "Block Iranian IPs forward in"
+
+        iif "{{ wifi_interface }}" oif "{{ ethernet_interface }}" accept
+        iif "{{ ethernet_interface }}" oif "{{ wifi_interface }}" ct state {established, related} accept
+
+        iif "tun0" oif "{{ ethernet_interface }}" accept
+        iif "{{ ethernet_interface }}" oif "tun0" ct state {established, related} accept
+
+        counter drop
+    }
+
+    chain output {
+        type filter hook output priority filter; policy accept;
+
+        ip daddr @iranian_blocklist counter drop comment "Block Iranian IPs outbound"
+
+        ct state {established, related, new} accept
+    }
+}
+
+table ip nat {
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+    }
+
+    chain postrouting {
+        type nat hook postrouting priority srcnat; policy accept;
+
+        oif "{{ ethernet_interface }}" masquerade
+    }
+}
+
+table ip6 filter {
+    chain input {
+        type filter hook input priority filter; policy drop;
+
+        ct state invalid drop
+        ct state {established, related} accept
+
+        iif "lo" accept
+
+        icmpv6 type { destination-unreachable, packet-too-big, time-exceeded, parameter-problem, echo-request, echo-reply, nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert } accept
+
+        counter drop
+    }
+
+    chain forward {
+        type filter hook forward priority filter; policy drop;
+
+        ct state invalid drop
+        ct state {established, related} accept
+
+        counter drop
+    }
+
+    chain output {
+        type filter hook output priority filter; policy accept;
+    }
+}

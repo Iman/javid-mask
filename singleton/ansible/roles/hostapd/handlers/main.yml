@@ -1,0 +1,10 @@
+---
+- name: restart hostapd
+  systemd:
+    name: hostapd
+    state: restarted
+
+- name: restart dnsmasq
+  systemd:
+    name: dnsmasq
+    state: restarted

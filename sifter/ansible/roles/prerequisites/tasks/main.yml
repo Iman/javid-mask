@@ -1,0 +1,92 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: dist
+  when: ansible_facts['distribution_release'] != 'bookworm'
+
+- name: Install essential packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - git
+      - vim
+      - htop
+      - iotop
+      - net-tools
+      - dnsutils
+      - nftables
+      - jq
+      - python3
+      - python3-pip
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - sudo
+      - cron
+    state: present
+
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ pi_hostname }}"
+
+- name: Update /etc/hosts with hostname
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1'
+    line: "127.0.1.1\t{{ pi_hostname }}"
+    state: present
+
+- name: Set timezone
+  ansible.builtin.timezone:
+    name: UTC
+
+- name: Enable NTP synchronisation
+  ansible.builtin.systemd:
+    name: systemd-timesyncd
+    enabled: yes
+    state: started
+
+- name: Create sifter log directory
+  ansible.builtin.file:
+    path: "{{ alert_log_path }}"
+    state: directory
+    owner: root
+    group: adm
+    mode: '0750'
+
+- name: Configure kernel parameters for network security
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+    sysctl_file: /etc/sysctl.d/99-sifter.conf
+  loop:
+    - { name: 'net.ipv4.ip_forward', value: '0' }
+    - { name: 'net.ipv4.conf.all.send_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.default.send_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.all.accept_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.default.accept_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.all.rp_filter', value: '1' }
+    - { name: 'net.ipv4.conf.default.rp_filter', value: '1' }
+    - { name: 'net.ipv4.icmp_echo_ignore_broadcasts', value: '1' }
+    - { name: 'net.ipv4.tcp_syncookies', value: '1' }
+
+- name: Disable IPv6 kernel parameters
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+    sysctl_file: /etc/sysctl.d/99-sifter-ipv6.conf
+  loop:
+    - { name: 'net.ipv6.conf.all.disable_ipv6', value: '1' }
+    - { name: 'net.ipv6.conf.default.disable_ipv6', value: '1' }
+    - { name: 'net.ipv6.conf.lo.disable_ipv6', value: '1' }
+  when: ipv6_disabled | default(true)

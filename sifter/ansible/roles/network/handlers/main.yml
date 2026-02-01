@@ -1,0 +1,10 @@
+---
+- name: Restart NetworkManager
+  ansible.builtin.systemd:
+    name: NetworkManager
+    state: restarted
+
+- name: Restart dhcpcd
+  ansible.builtin.systemd:
+    name: dhcpcd
+    state: restarted

@@ -1,0 +1,8 @@
+all:
+  hosts:
+    raspberry_pi:
+      ansible_host: 10.0.0.242
+      ansible_user: admin
+      ansible_python_interpreter: /usr/bin/python3
+      ansible_become: yes
+      ansible_become_method: sudo

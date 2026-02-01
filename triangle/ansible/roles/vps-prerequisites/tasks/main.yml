@@ -1,0 +1,79 @@
+---
+# Simple VPS prerequisites for 3x-UI
+# 3x-UI handles its own proxy configuration (WireGuard/Xray)
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install essential packages
+  apt:
+    name:
+      - curl
+      - wget
+      - gnupg
+      - ca-certificates
+      - socat
+      - jq
+      - net-tools
+      - iptables
+    state: present
+
+- name: Set timezone
+  timezone:
+    name: "{{ system_timezone }}"
+
+- name: Enable IPv4 forwarding (required for proxy)
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Ensure IP forwarding persists in sysctl.conf
+  lineinfile:
+    path: /etc/sysctl.conf
+    regexp: '^#?net.ipv4.ip_forward'
+    line: 'net.ipv4.ip_forward=1'
+
+- name: Create sysctl.d config for IP forwarding (extra persistence)
+  copy:
+    dest: /etc/sysctl.d/99-ip-forward.conf
+    mode: '0644'
+    content: |
+      net.ipv4.ip_forward=1
+
+- name: Apply sysctl settings immediately
+  shell: sysctl -p /etc/sysctl.d/99-ip-forward.conf
+  changed_when: false
+
+- name: Detect VPS network interface
+  shell: ip route | grep default | awk '{print $5}' | head -1
+  register: detected_vps_interface
+  changed_when: false
+
+- name: Set up basic NAT masquerade for 3x-UI traffic
+  shell: |
+    iptables -t nat -C POSTROUTING -o {{ detected_vps_interface.stdout }} -j MASQUERADE 2>/dev/null || \
+    iptables -t nat -A POSTROUTING -o {{ detected_vps_interface.stdout }} -j MASQUERADE
+  changed_when: false
+
+- name: Allow forwarding for established connections
+  shell: |
+    iptables -C FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || \
+    iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+  changed_when: false
+
+- name: Install iptables-persistent for rule persistence
+  apt:
+    name: iptables-persistent
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Save iptables rules
+  shell: |
+    iptables-save > /etc/iptables/rules.v4 || true
+  changed_when: false

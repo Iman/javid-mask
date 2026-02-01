@@ -1,0 +1,118 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.3.6 Chrome/140.0.7339.249 Electron/38.8.0 Safari/537.36" version="29.3.6">
+  <diagram name="Network Architecture - Sifter DNS Gateway" id="sifter-dns-arch">
+    <mxGraphModel dx="1284" dy="876" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontColor=#1a1a1a;" value="Sifter Architecture - DNS Protection Gateway" vertex="1">
+          <mxGeometry height="40" width="800" x="400" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontColor=#666666;" value="Identity Protection: Pi-hole DNS (1.6M+ blocks) + Cloudflared DoH + nftables (763 Iranian IPs) + 131K+ Iranian Domains Blocked" vertex="1">
+          <mxGeometry height="25" width="800" x="400" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="internet" parent="1" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;fontStyle=1" value="PUBLIC&#xa;INTERNET" vertex="1">
+          <mxGeometry height="100" width="180" x="700" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="starlink-box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=2;dashed=1;" value="" vertex="1">
+          <mxGeometry height="120" width="280" x="650" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="starlink-title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#9673a6;" value="STARLINK (Optional)" vertex="1">
+          <mxGeometry height="20" width="140" x="720" y="235" as="geometry" />
+        </mxCell>
+        <mxCell id="starlink-terminal" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" value="Starlink Terminal&#xa;CGNAT: 100.x.x.x" vertex="1">
+          <mxGeometry height="50" width="110" x="670" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="starlink-router" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" value="Starlink Router&#xa;LAN: 10.0.0.1" vertex="1">
+          <mxGeometry height="50" width="110" x="800" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="starlink-arrow" edge="1" parent="1" source="starlink-terminal" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#9673a6;" target="starlink-router" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="inet-starlink" edge="1" parent="1" source="internet" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=3;strokeColor=#6c8ebf;" target="starlink-box" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="rpi-container" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=4;" value="" vertex="1">
+          <mxGeometry height="350" width="420" x="580" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="rpi-title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#82b366;" value="RASPBERRY PI - SIFTER DNS GATEWAY" vertex="1">
+          <mxGeometry height="25" width="340" x="620" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="rpi-ip" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#666666;" value="eth0: 10.0.0.242 (DNS Server IP)" vertex="1">
+          <mxGeometry height="18" width="220" x="680" y="432" as="geometry" />
+        </mxCell>
+        <mxCell id="pihole" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b4d7e8;strokeColor=#6c8ebf;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" value="Pi-hole v6&#xa;&#xa;Port: 53 (DNS)&#xa;Port: 80 (Admin)&#xa;Blocked: 1.6M+ domains&#xa;Iranian: 131K+ domains&#xa;DNSSEC: Enabled" vertex="1">
+          <mxGeometry height="120" width="180" x="600" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="cloudflared" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b4d7e8;strokeColor=#6c8ebf;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" value="Cloudflared (DoH)&#xa;&#xa;Listen: 127.0.0.1:5053&#xa;Upstream: 1.1.1.1&#xa;Protocol: HTTPS&#xa;ISP: Cannot see queries" vertex="1">
+          <mxGeometry height="120" width="180" x="800" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="nftables" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" value="nftables Firewall&#xa;&#xa;Iranian IPs: 763 CIDRs BLOCKED&#xa;IPv6: DISABLED (DROP all)&#xa;Logging: Blocked attempts" vertex="1">
+          <mxGeometry height="100" width="180" x="600" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="iranian-block" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;align=left;verticalRezagn=top;spacingLeft=10;spacingTop=5" value="Iranian Domain Block&#xa;&#xa;bootmortis: 131K+&#xa;*.ir TLD: BLOCKED&#xa;*.gov.ir: BLOCKED&#xa;All subdomains: BLOCKED" vertex="1">
+          <mxGeometry height="100" width="180" x="800" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="dns-flow-arrow" edge="1" parent="1" source="pihole" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#6c8ebf;" target="cloudflared" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dns-flow-label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;fontSize=9;fontColor=#6c8ebf;" value="DNS →" vertex="1">
+          <mxGeometry height="15" width="40" x="770" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="router-pi" edge="1" parent="1" source="starlink-router" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=3;strokeColor=#82b366;" target="rpi-container" value="Ethernet&#xa;10.0.0.0/24">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="devices-container" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="400" width="380" x="100" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="devices-title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#d6b656;" value="HOME DEVICES (DNS: 10.0.0.242)" vertex="1">
+          <mxGeometry height="25" width="280" x="150" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="device-phone" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=center;verticalRezagn=top;spacingTop=5" value="Smartphone&#xa;DNS: 10.0.0.242&#xa;&#xa;All DNS queries filtered&#xa;Iranian domains blocked" vertex="1">
+          <mxGeometry height="80" width="140" x="130" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="device-laptop" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=center;verticalRezagn=top;spacingTop=5" value="Laptop / PC&#xa;DNS: 10.0.0.242&#xa;&#xa;All DNS queries filtered&#xa;Iranian domains blocked" vertex="1">
+          <mxGeometry height="80" width="140" x="300" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="device-tablet" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=center;verticalRezagn=top;spacingTop=5" value="Tablet&#xa;DNS: 10.0.0.242&#xa;&#xa;All DNS queries filtered&#xa;Iranian domains blocked" vertex="1">
+          <mxGeometry height="80" width="140" x="130" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="device-smart-tv" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;align=center;verticalRezagn=top;spacingTop=5" value="Smart TV&#xa;DNS: 10.0.0.242&#xa;&#xa;All DNS queries filtered&#xa;Iranian domains blocked" vertex="1">
+          <mxGeometry height="80" width="140" x="300" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="device-router-config" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=center;verticalRezagn=top;spacingTop=5" value="Router DHCP Config (Recommended)&#xa;&#xa;Set DHCP DNS Server to: 10.0.0.242&#xa;All devices auto-protected!" vertex="1">
+          <mxGeometry height="60" width="310" x="130" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="manual-config" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9;align=left;verticalRezagn=top;spacingLeft=5;spacingTop=5" value="Or configure DNS manually per device:&#xa;Primary DNS: 10.0.0.242&#xa;Secondary DNS: (leave empty)" vertex="1">
+          <mxGeometry height="50" width="310" x="130" y="710" as="geometry" />
+        </mxCell>
+        <mxCell id="dns-arrow-1" edge="1" parent="1" source="devices-container" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#d79b00;dashed=1;" target="rpi-container" value="DNS">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="threat-box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="350" width="350" x="1100" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="threat-title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#b85450;" value="IDENTITY CORRELATION ATTACK PREVENTION" vertex="1">
+          <mxGeometry height="25" width="330" x="1110" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="threat-diagram" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=top;whiteSpace=wrap;rounded=0;fontSize=10;fontFamily=Courier New;fontColor=#333333;spacingLeft=10;spacingTop=10" value="BLOCKED BY SIFTER:&lt;br&gt;&lt;br&gt;┌──────────────┐&lt;br&gt;│ User Device&amp;nbsp; │&lt;br&gt;│ Cookie: Reza&amp;nbsp; │──X──►  digikala.com&lt;br&gt;│ IP: Starlink │       (BLOCKED)&lt;br&gt;└──────────────┘&lt;br&gt;&lt;br&gt;Iranian website cannot see:&lt;br&gt;• Your cookies&lt;br&gt;• Your Starlink IP&lt;br&gt;• Your identity&lt;br&gt;&lt;br&gt;Result: IDENTITY PROTECTED" vertex="1">
+          <mxGeometry height="200" width="330" x="1110" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="blocked-list" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=top;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#b85450;spacingLeft=10" value="Blocked Vectors:&#xa;✓ DNS queries to *.ir&#xa;✓ DNS queries to Iranian services&#xa;✓ IP connections to Iran (763 CIDRs)&#xa;✓ Cookie leakage to Iranian servers" vertex="1">
+          <mxGeometry height="90" width="330" x="1110" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="security-summary" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="260" width="350" x="1100" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="summary-title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#82b366;" value="SIFTER PROTECTION SUMMARY" vertex="1">
+          <mxGeometry height="25" width="290" x="1130" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="summary-list" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalRezagn=top;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#333333;spacingLeft=15;spacingTop=10" value="✓ DNS Filtering: 1.6M+ domains blocked&#xa;✓ Iranian Domains: 131,576+ blocked&#xa;✓ Iranian IPs: 763 CIDR ranges blocked&#xa;✓ DNS Encryption: DoH via Cloudflare&#xa;✓ IPv6 Leak: BLOCKED (DROP all)&#xa;✓ DNSSEC: Enabled&#xa;&#xa;What Sifter Does NOT Do:&#xa;• No WiFi AP (use existing network)&#xa;• No VPN/Proxy (DNS only)&#xa;• No traffic encryption&#xa;  (use HTTPS for that)&#xa;&#xa;Simple, focused protection." vertex="1">
+          <mxGeometry height="210" width="330" x="1110" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="copyright" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalRezagn=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#666666;" value="© 2026 Iman Samizadeh | MIT License | javid-mask Project | Sifter Architecture - DNS-Only Protection" vertex="1">
+          <mxGeometry height="25" width="800" x="400" y="820" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

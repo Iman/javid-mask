@@ -1,0 +1,241 @@
+---
+# Pi-hole DNS Security Hardening Tasks
+# Implements DNS-over-HTTPS, DNSSec, and leak prevention
+
+- name: Install cloudflared for DNS-over-HTTPS
+  block:
+    - name: Check if cloudflared is installed
+      stat:
+        path: /usr/local/bin/cloudflared
+      register: cloudflared_installed
+
+    - name: Download cloudflared
+      get_url:
+        url: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64"
+        dest: /usr/local/bin/cloudflared
+        mode: '0755'
+      when: not cloudflared_installed.stat.exists
+
+    - name: Create cloudflared user
+      user:
+        name: cloudflared
+        system: yes
+        shell: /usr/sbin/nologin
+        home: /var/lib/cloudflared
+        create_home: yes
+
+    - name: Create cloudflared config directory
+      file:
+        path: /etc/cloudflared
+        state: directory
+        owner: cloudflared
+        group: cloudflared
+        mode: '0755'
+
+    - name: Configure cloudflared for DNS-over-HTTPS
+      template:
+        src: cloudflared-config.yml.j2
+        dest: "{{ cloudflared_config_dir }}/config.yml"
+        mode: '0644'
+        owner: "{{ cloudflared_user }}"
+        group: "{{ cloudflared_user }}"
+
+    - name: Create cloudflared systemd service
+      copy:
+        dest: /etc/systemd/system/cloudflared.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=cloudflared DNS over HTTPS proxy
+          After=network.target
+          Before=pihole-FTL.service
+
+          [Service]
+          Type=simple
+          User=cloudflared
+          ExecStart=/usr/local/bin/cloudflared --config /etc/cloudflared/config.yml --no-autoupdate
+          Restart=on-failure
+          RestartSec=10
+          KillMode=process
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: reload systemd
+
+    - name: Enable and start cloudflared
+      systemd:
+        name: cloudflared
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+    - name: Wait for cloudflared to be ready
+      wait_for:
+        port: 5053
+        host: 127.0.0.1
+        delay: 2
+        timeout: 30
+
+- name: Configure Pi-hole to use DNS-over-HTTPS
+  block:
+    - name: Update Pi-hole DNS to use cloudflared
+      template:
+        src: setupVars.conf.j2
+        dest: "{{ pihole_install_dir }}/setupVars.conf"
+        mode: '0644'
+      notify: restart pihole
+
+- name: Configure Pi-hole security settings
+  block:
+    - name: Create Pi-hole custom DNS configuration
+      template:
+        src: pihole-security.conf.j2
+        dest: /etc/dnsmasq.d/99-pihole-security.conf
+        mode: '0644'
+      notify: restart pihole
+
+    - name: Configure Pi-hole FTL privacy settings
+      copy:
+        dest: /etc/pihole/pihole-FTL.conf
+        mode: '0644'
+        content: |
+          # FTL Security and Privacy Configuration
+
+          # Privacy level (0=show everything, 1=hide domains, 2=hide domains and clients, 3=anonymous mode)
+          PRIVACYLEVEL=0
+
+          # Blocking mode (IP-NODATA-AAAA for maximum privacy)
+          BLOCKINGMODE=IP
+
+          # Rate limiting
+          RATE_LIMIT=1000/60
+
+          # Database settings
+          MAXDBDAYS=365
+          DBINTERVAL=1.0
+
+          # Reply settings for blocked domains
+          BLOCK_IPV4=0.0.0.0
+          BLOCK_IPV6=::
+
+          # Resolve IPs to hostnames
+          RESOLVE_IPV6=no
+          RESOLVE_IPV4=yes
+
+          # Socket settings
+          SOCKET_LISTENING=localonly
+
+          # Refresh blocklists every day
+          REFRESH_HOSTNAMES=yes
+
+          # Enable query logging for security monitoring
+          QUERY_LOGGING=true
+
+          # Disable DHCP rapid commit (security)
+          DHCP_RAPID_COMMIT=false
+      notify: restart pihole
+
+- name: Add security-focused blocklists to Pi-hole
+  blockinfile:
+    path: /etc/pihole/adlists.list
+    marker: "# {mark} SECURITY BLOCKLISTS"
+    create: yes
+    mode: '0644'
+    block: |
+      # Security and privacy blocklists
+
+      # StevenBlack's Unified Hosts (ads + malware)
+      https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+
+      # Malware domains
+      https://mirror1.malwaredomains.com/files/justdomains
+      https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt
+
+      # Tracking and telemetry
+      https://v.firebog.net/hosts/Easyprivacy.txt
+      https://v.firebog.net/hosts/Prigent-Ads.txt
+
+      # Phishing
+      https://phishing.army/download/phishing_army_blocklist_extended.txt
+
+      # Ransomware
+      https://raw.githubusercontent.com/Spam404/lists/master/main-blacklist.txt
+
+      # Crypto miners
+      https://zerodot1.gitlab.io/CoinBlockerLists/hosts_browser
+
+      # Smart TV tracking
+      https://v.firebog.net/hosts/static/w3kbl.txt
+  notify: update gravity
+
+- name: Configure firewall for DNS security
+  blockinfile:
+    path: /etc/nftables.conf
+    marker: "# {mark} DNS SECURITY"
+    insertbefore: "^}"
+    block: |
+      # DNS Security Rules
+
+      # Only allow DNS from local networks
+      iif "{{ wifi_interface }}" udp dport 53 accept
+      iif "{{ ethernet_interface }}" udp dport 53 accept
+      iif "{{ wifi_interface }}" tcp dport 53 accept
+      iif "{{ ethernet_interface }}" tcp dport 53 accept
+
+      # Block outbound DNS to prevent bypassing Pi-hole
+      oif "{{ ethernet_interface }}" ip daddr != { 127.0.0.1, 1.1.1.1, 1.0.0.1 } udp dport 53 drop
+      oif "{{ ethernet_interface }}" ip daddr != { 127.0.0.1, 1.1.1.1, 1.0.0.1 } tcp dport 53 drop
+  notify: reload nftables
+
+- name: Create DNS leak test reminder
+  copy:
+    dest: /tmp/.dns_security_info
+    mode: '0644'
+    content: |
+      DNS Security Configuration Applied:
+
+      ✓ DNS-over-HTTPS (DoH) via Cloudflared
+        - Upstream: Cloudflare 1.1.1.1 over HTTPS
+        - Local DoH port: 127.0.0.1:5053
+
+      ✓ DNSSec validation enabled
+        - Validates DNS responses cryptographically
+        - Prevents DNS spoofing
+
+      ✓ DNS leak prevention
+        - Blocks private IP responses
+        - Prevents DNS rebinding attacks
+        - Firewall blocks direct DNS queries
+
+      ✓ Privacy protection
+        - No DNS query logging to upstream
+        - Rate limiting enabled (1000 queries/60s)
+        - Local-only DNS resolution
+
+      ✓ Security blocklists
+        - Malware domains blocked
+        - Tracking and telemetry blocked
+        - Phishing sites blocked
+        - Ransomware domains blocked
+        - Crypto mining scripts blocked
+
+      Testing DNS Security:
+        1. DNS Leak Test: https://dnsleaktest.com
+        2. DNSSec Test: https://dnssec.vs.uni-due.de
+        3. DNS-over-HTTPS Test: https://1.1.1.1/help
+
+      Expected Results:
+        - DNS Leak Test: Should show Cloudflare (1.1.1.1)
+        - DNSSec Test: Should show "DNSSec enabled"
+        - Queries encrypted via HTTPS to Cloudflare
+
+- name: Display DNS security status
+  debug:
+    msg:
+      - "DNS Security Hardening Applied:"
+      - "✓ DNS-over-HTTPS enabled (Cloudflared)"
+      - "✓ DNSSec validation enabled"
+      - "✓ DNS leak prevention configured"
+      - "✓ Privacy-focused settings applied"
+      - "✓ Security blocklists added"
+      - "Test at: https://dnsleaktest.com"

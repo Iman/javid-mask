@@ -1,0 +1,23 @@
+{
+  "dns": {
+    "servers": [
+      {
+        "address": "{{ wifi_gateway }}",
+        "port": 53,
+        "domains": [],
+        "expectIPs": []
+      },
+      {
+        "address": "1.1.1.1",
+        "port": 53,
+        "domains": [],
+        "expectIPs": []
+      },
+      "localhost"
+    ],
+    "queryStrategy": "UseIPv4",
+    "disableCache": false,
+    "disableFallback": false,
+    "tag": "dns_inbound"
+  }
+}

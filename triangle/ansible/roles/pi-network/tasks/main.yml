@@ -1,0 +1,113 @@
+---
+- name: Install dhcpcd5 for static IP management
+  apt:
+    name: dhcpcd5
+    state: present
+
+- name: Stop conflicting services
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  loop:
+    - wpa_supplicant
+  ignore_errors: yes
+
+- name: Prevent NetworkManager from managing WiFi interface
+  copy:
+    dest: /etc/NetworkManager/conf.d/unmanaged-wlan0.conf
+    content: |
+      [keyfile]
+      unmanaged-devices=interface-name:{{ wifi_interface }}
+    mode: '0644'
+  ignore_errors: yes
+
+- name: Configure static IP for WiFi interface via dhcpcd
+  blockinfile:
+    path: /etc/dhcpcd.conf
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - WiFi AP"
+    block: |
+      interface {{ wifi_interface }}
+      static ip_address={{ wifi_gateway }}/24
+      nohook wpa_supplicant
+    create: yes
+    mode: '0644'
+
+- name: Configure ethernet interface (DHCP from router)
+  blockinfile:
+    path: /etc/dhcpcd.conf
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - Ethernet"
+    block: |
+      interface {{ ethernet_interface }}
+      static domain_name_servers=1.1.1.1 8.8.8.8
+    create: yes
+    mode: '0644'
+
+- name: Restart NetworkManager if present
+  systemd:
+    name: NetworkManager
+    state: restarted
+  ignore_errors: yes
+
+- name: Create wlan0-setup script with retry logic
+  copy:
+    dest: /usr/local/bin/setup-wlan0.sh
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      rfkill unblock wifi || true
+      sleep 3
+      for i in 1 2 3 4 5; do
+        ip link set {{ wifi_interface }} down 2>/dev/null || true
+        ip addr flush dev {{ wifi_interface }} 2>/dev/null || true
+        ip addr add {{ wifi_gateway }}/24 dev {{ wifi_interface }} 2>/dev/null || true
+        if ip link set {{ wifi_interface }} up 2>/dev/null; then
+          echo "{{ wifi_interface }} setup complete on attempt $i"
+          ip addr show {{ wifi_interface }}
+          exit 0
+        fi
+        echo "Attempt $i failed, retrying..."
+        sleep 2
+      done
+      echo "{{ wifi_interface }} setup failed after 5 attempts"
+      exit 1
+
+- name: Create wlan0-setup systemd service
+  copy:
+    dest: /etc/systemd/system/wlan0-setup.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Setup wlan0 IP for WiFi hotspot
+      Before=hostapd.service pihole-FTL.service
+      After=network-pre.target rfkill-unblock.service
+      Wants=network-pre.target
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/local/bin/setup-wlan0.sh
+      TimeoutStartSec=60
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Enable wlan0-setup service
+  systemd:
+    name: wlan0-setup
+    enabled: yes
+
+- name: Start wlan0-setup service
+  systemd:
+    name: wlan0-setup
+    state: started
+  ignore_errors: yes
+
+- name: Bring up WiFi interface manually
+  command: ip link set {{ wifi_interface }} up
+  changed_when: false
+  ignore_errors: yes

@@ -1,0 +1,45 @@
+# MIT License
+# Copyright (c) 2026 Iman Samizadeh
+# See LICENSE file in the project root for full license text.
+
+# Credentials and secrets
+credentials.txt
+DEPLOYMENT-COMPLETE.txt
+*.password
+*.secret
+/tmp/
+.xui_*
+.pihole_*
+.wifi_*
+
+# Ansible
+*.retry
+.ansible/
+ansible.cfg
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.orig

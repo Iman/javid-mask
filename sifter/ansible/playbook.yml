@@ -1,0 +1,107 @@
+---
+- name: Deploy Sifter DNS Protection Gateway
+  hosts: raspberry_pi
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Verify Raspberry Pi OS
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Debian"
+          - ansible_architecture in ["aarch64", "armv7l"]
+        fail_msg: "This playbook requires Raspberry Pi OS (Debian-based)"
+
+  roles:
+    - role: prerequisites
+      tags: [prerequisites, always]
+
+    - role: network
+      tags: [network]
+
+    - role: cloudflared
+      when: cloudflared_enabled | default(true)
+      tags: [cloudflared, dns]
+
+    - role: pihole
+      when: pihole_enabled | default(true)
+      tags: [pihole, dns]
+
+    - role: firewall
+      tags: [firewall]
+
+  post_tasks:
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg: |
+
+          ========================================
+          SIFTER DEPLOYMENT COMPLETE
+          ========================================
+
+          DNS Server IP: {{ pi_static_ip }}
+
+          Configure your devices to use this DNS:
+            Primary DNS:   {{ pi_static_ip }}
+            Secondary DNS: (leave empty or use {{ pi_static_ip }})
+
+          Pi-hole Admin: http://{{ pi_static_ip }}/admin
+
+          Protection Status:
+            Iranian Domains: {{ 'BLOCKED (131K+)' if block_iranian_domains else 'NOT BLOCKED' }}
+            Iranian IPs:     {{ 'BLOCKED (763 CIDRs)' if block_iranian_ips else 'NOT BLOCKED' }}
+            IPv6:            {{ 'DISABLED' if ipv6_disabled else 'ENABLED' }}
+            DoH:             {{ 'ENABLED (Cloudflare)' if cloudflared_enabled else 'DISABLED' }}
+
+          Credentials saved to: ./credentials.txt
+          ========================================
+
+    - name: Save credentials locally
+      ansible.builtin.copy:
+        content: |
+          ========================================
+          SIFTER DNS GATEWAY CREDENTIALS
+          Generated: {{ ansible_date_time.iso8601 }}
+          ========================================
+
+          DNS Server IP: {{ pi_static_ip }}
+
+          Pi-hole Admin:
+            URL: http://{{ pi_static_ip }}/admin
+            Password: {{ pihole_web_password }}
+
+          SSH Access:
+            Host: {{ pi_static_ip }}
+            User: {{ pi_user }}
+
+          ========================================
+          DEVICE CONFIGURATION
+          ========================================
+
+          To protect your devices, configure DNS:
+
+          Windows:
+            Settings > Network > Change adapter options
+            > Properties > IPv4 > Use DNS: {{ pi_static_ip }}
+
+          macOS:
+            System Preferences > Network > Advanced > DNS
+            Add: {{ pi_static_ip }}
+
+          iOS:
+            Settings > Wi-Fi > (i) > Configure DNS > Manual
+            Add: {{ pi_static_ip }}
+
+          Android:
+            Settings > Network > Private DNS
+            Or per-network: Static IP with DNS {{ pi_static_ip }}
+
+          Router (recommended):
+            Set DHCP DNS to {{ pi_static_ip }}
+            All devices auto-protected
+
+          ========================================
+        dest: ./credentials.txt
+        mode: '0600'
+      delegate_to: localhost
+      become: no

@@ -1,0 +1,63 @@
+---
+- name: Install hostapd and dnsmasq
+  apt:
+    name:
+      - hostapd
+      - dnsmasq
+    state: present
+
+- name: Stop services for configuration
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+  loop:
+    - hostapd
+    - dnsmasq
+
+- name: Configure hostapd
+  template:
+    src: hostapd.conf.j2
+    dest: /etc/hostapd/hostapd.conf
+    mode: '0644'
+  notify: restart hostapd
+
+- name: Set hostapd config path
+  lineinfile:
+    path: /etc/default/hostapd
+    regexp: '^#?DAEMON_CONF='
+    line: 'DAEMON_CONF="/etc/hostapd/hostapd.conf"'
+    create: yes
+    mode: '0644'
+
+- name: Backup original dnsmasq.conf
+  copy:
+    src: /etc/dnsmasq.conf
+    dest: /etc/dnsmasq.conf.backup
+    remote_src: yes
+    force: no
+  ignore_errors: yes
+
+- name: Configure dnsmasq for DHCP
+  template:
+    src: dnsmasq.conf.j2
+    dest: /etc/dnsmasq.conf
+    mode: '0644'
+  notify: restart dnsmasq
+
+- name: Unmask hostapd service
+  systemd:
+    name: hostapd
+    masked: no
+
+- name: Enable and start hostapd
+  systemd:
+    name: hostapd
+    enabled: yes
+    state: started
+
+- name: Enable and start dnsmasq
+  systemd:
+    name: dnsmasq
+    enabled: yes
+    state: started
+  ignore_errors: yes  # Pi-hole will replace dnsmasq

@@ -1,0 +1,8 @@
+proxy-dns: true
+proxy-dns-port: {{ cloudflared_dns_port }}
+proxy-dns-address: {{ cloudflared_dns_address }}
+proxy-dns-upstream:
+{% for upstream in cloudflared_upstream_dns %}
+  - {{ upstream }}
+{% endfor %}
+metrics: {{ cloudflared_dns_address }}:{{ cloudflared_metrics_port }}

@@ -1,0 +1,5 @@
+---
+- name: restart singbox
+  systemd:
+    name: sing-box
+    state: restarted

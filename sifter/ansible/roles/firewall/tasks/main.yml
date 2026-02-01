@@ -1,0 +1,79 @@
+---
+- name: Install nftables
+  ansible.builtin.apt:
+    name: nftables
+    state: present
+
+- name: Enable nftables service
+  ansible.builtin.systemd:
+    name: nftables
+    enabled: yes
+
+- name: Create firewall scripts directory
+  ansible.builtin.file:
+    path: /usr/local/bin
+    state: directory
+    mode: '0755'
+
+- name: Download Iranian IP blocklist
+  ansible.builtin.get_url:
+    url: "{{ iranian_ip_sources[0] }}"
+    dest: /etc/sifter-iranian-ips.txt
+    mode: '0644'
+  when: block_iranian_ips | default(true)
+  register: ip_blocklist_download
+
+- name: Copy local Iranian IPs file
+  ansible.builtin.copy:
+    src: iranian-ips.txt
+    dest: /etc/sifter-iranian-ips-local.txt
+    mode: '0644'
+  when: block_iranian_ips | default(true)
+  ignore_errors: yes
+
+- name: Create nftables configuration
+  ansible.builtin.template:
+    src: nftables.conf.j2
+    dest: /etc/nftables.conf
+    owner: root
+    group: root
+    mode: '0644'
+    validate: 'nft -c -f %s'
+  notify: Reload nftables
+
+- name: Create firewall update script
+  ansible.builtin.template:
+    src: update-firewall.sh.j2
+    dest: /usr/local/bin/update-sifter-firewall.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Run initial firewall update
+  ansible.builtin.command: /usr/local/bin/update-sifter-firewall.sh
+  register: firewall_update
+  changed_when: "'Updated' in firewall_update.stdout"
+  when: block_iranian_ips | default(true)
+
+- name: Create cron job for IP blocklist updates
+  ansible.builtin.cron:
+    name: "Update Sifter Iranian IP blocklist"
+    minute: "30"
+    hour: "3"
+    job: "/usr/local/bin/update-sifter-firewall.sh >> {{ alert_log_path }}/firewall-update.log 2>&1"
+    user: root
+  when: block_iranian_ips | default(true)
+
+- name: Start nftables
+  ansible.builtin.systemd:
+    name: nftables
+    state: started
+
+- name: Verify firewall is active
+  ansible.builtin.command: nft list ruleset
+  register: nft_rules
+  changed_when: false
+
+- name: Display firewall status
+  ansible.builtin.debug:
+    msg: "Firewall active with {{ nft_rules.stdout_lines | length }} lines of rules"

@@ -1,0 +1,223 @@
+---
+- name: Check if Pi-hole is installed
+  stat:
+    path: /usr/local/bin/pihole
+  register: pihole_installed
+
+- name: Stop and disable dnsmasq (conflicts with Pi-hole)
+  systemd:
+    name: dnsmasq
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+
+- name: Download Pi-hole installer
+  get_url:
+    url: https://install.pi-hole.net
+    dest: /tmp/pihole-install.sh
+    mode: '0755'
+  when: not pihole_installed.stat.exists
+
+- name: Create Pi-hole config directory
+  file:
+    path: /etc/pihole
+    state: directory
+    mode: '0755'
+  when: not pihole_installed.stat.exists
+
+- name: Create Pi-hole setup configuration
+  copy:
+    dest: /etc/pihole/setupVars.conf
+    mode: '0644'
+    content: |
+      PIHOLE_INTERFACE={{ wifi_interface }}
+      IPV4_ADDRESS={{ wifi_gateway }}/24
+      IPV6_ADDRESS=
+      QUERY_LOGGING=true
+      INSTALL_WEB_SERVER=true
+      INSTALL_WEB_INTERFACE=true
+      LIGHTTPD_ENABLED=true
+      CACHE_SIZE={{ pihole_cache_size }}
+      DNS_FQDN_REQUIRED={{ pihole_dns_fqdn_required | lower }}
+      DNS_BOGUS_PRIV={{ pihole_dns_bogus_priv | lower }}
+      DNSMASQ_LISTENING=local
+      WEBPASSWORD={{ pihole_web_password | hash('sha256') | hash('sha256') }}
+      BLOCKING_ENABLED=true
+      PIHOLE_DNS_1={{ pihole_upstream_dns_1 }}
+      PIHOLE_DNS_2={{ pihole_upstream_dns_2 if pihole_upstream_dns_2 else '' }}
+      DNS_REVERSE_LOOKUPS=false
+      DHCP_ACTIVE=true
+      DHCP_START={{ dhcp_range_start }}
+      DHCP_END={{ dhcp_range_end }}
+      DHCP_ROUTER={{ wifi_gateway }}
+      DHCP_LEASETIME=24
+      PIHOLE_DOMAIN=lan
+      DHCP_IPv6=false
+  when: not pihole_installed.stat.exists
+
+- name: Install Pi-hole
+  shell: |
+    export PIHOLE_SKIP_OS_CHECK=true
+    export DEBIAN_FRONTEND=noninteractive
+    /tmp/pihole-install.sh --unattended < /dev/null
+  args:
+    creates: /usr/local/bin/pihole
+  async: 600
+  poll: 10
+  when: not pihole_installed.stat.exists
+
+- name: Set Pi-hole web password
+  command: "pihole -a -p {{ pihole_web_password }}"
+  no_log: true
+  changed_when: false
+
+- name: Install Cloudflared for DNS-over-HTTPS
+  shell: |
+    ARCH=$(dpkg --print-architecture)
+    wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}.deb -O /tmp/cloudflared.deb
+    dpkg -i /tmp/cloudflared.deb
+  args:
+    creates: /usr/local/bin/cloudflared
+
+- name: Create cloudflared user
+  user:
+    name: cloudflared
+    system: yes
+    shell: /usr/sbin/nologin
+    home: /var/lib/cloudflared
+  ignore_errors: yes
+
+- name: Create cloudflared config directory
+  file:
+    path: /etc/cloudflared
+    state: directory
+    owner: cloudflared
+    group: cloudflared
+    mode: '0755'
+  ignore_errors: yes
+
+- name: Configure cloudflared
+  copy:
+    dest: /etc/cloudflared/config.yml
+    mode: '0644'
+    content: |
+      proxy-dns: true
+      proxy-dns-port: {{ cloudflared_dns_port }}
+      proxy-dns-address: {{ cloudflared_dns_address }}
+      proxy-dns-upstream:
+        - https://1.1.1.1/dns-query
+        - https://1.0.0.1/dns-query
+
+- name: Create cloudflared systemd service
+  copy:
+    dest: /etc/systemd/system/cloudflared.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=cloudflared DNS over HTTPS proxy
+      After=network.target
+
+      [Service]
+      Type=simple
+      User=cloudflared
+      ExecStart=/usr/local/bin/cloudflared proxy-dns --port {{ cloudflared_dns_port }} --address {{ cloudflared_dns_address }} --upstream https://1.1.1.1/dns-query --upstream https://1.0.0.1/dns-query
+      Restart=on-failure
+      RestartSec=10
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable and start cloudflared
+  systemd:
+    name: cloudflared
+    enabled: yes
+    state: started
+    daemon_reload: yes
+
+- name: Create Pi-hole dnsmasq DHCP configuration
+  copy:
+    dest: /etc/dnsmasq.d/02-triangle-dhcp.conf
+    mode: '0644'
+    content: |
+      interface={{ wifi_interface }}
+      bind-interfaces
+      listen-address={{ wifi_gateway }}
+      dhcp-range={{ dhcp_range_start }},{{ dhcp_range_end }},255.255.255.0,{{ dhcp_lease_time }}
+      dhcp-option=3,{{ wifi_gateway }}
+      dhcp-option=6,{{ wifi_gateway }}
+      dhcp-authoritative
+      log-dhcp
+      domain-needed
+      bogus-priv
+  notify: restart pihole
+
+- name: Download Iranian domain blocklists
+  get_url:
+    url: "{{ item }}"
+    dest: "/opt/blocklists/iranian-domains-{{ ansible_loop.index }}.txt"
+    mode: '0644'
+  loop: "{{ iranian_domain_sources }}"
+  loop_control:
+    extended: yes
+  ignore_errors: yes
+
+- name: Combine Iranian domain blocklists
+  shell: |
+    cat /opt/blocklists/iranian-domains-*.txt 2>/dev/null | sort -u > /opt/blocklists/iranian-domains-combined.txt || true
+  changed_when: false
+
+- name: Add Iranian domains to Pi-hole
+  lineinfile:
+    path: /etc/pihole/adlists.list
+    line: "file:///opt/blocklists/iranian-domains-combined.txt"
+    create: yes
+    mode: '0644'
+
+- name: Add security blocklists
+  blockinfile:
+    path: /etc/pihole/adlists.list
+    marker: "# {mark} SECURITY BLOCKLISTS"
+    block: |
+      {% for url in security_blocklists %}
+      {{ url }}
+      {% endfor %}
+    create: yes
+    mode: '0644'
+
+- name: Add Iranian domains to Pi-hole database (v6 - Identity Protection)
+  shell: |
+    sqlite3 /etc/pihole/gravity.db << 'EOF'
+    INSERT OR IGNORE INTO adlist (address, enabled, comment) VALUES
+    ("https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/domains.txt", 1, "Iranian Domains (131k+) - Identity Protection"),
+    ("https://raw.githubusercontent.com/liketolivefree/iran_domain-ip/main/domains.txt", 1, "Iranian Domains Additional");
+    EOF
+  args:
+    executable: /bin/bash
+  changed_when: false
+  ignore_errors: yes
+
+- name: Update gravity
+  command: pihole -g
+  changed_when: false
+  ignore_errors: yes
+
+- name: Configure Pi-hole upstream DNS to use cloudflared (v6)
+  shell: |
+    pihole-FTL --config dns.upstreams "[ \"127.0.0.1#{{ cloudflared_dns_port }}\" ]"
+  changed_when: false
+  ignore_errors: yes
+
+- name: Enable Pi-hole DHCP (v6)
+  shell: |
+    pihole-FTL --config dhcp.active true
+    pihole-FTL --config dhcp.start "{{ dhcp_range_start }}"
+    pihole-FTL --config dhcp.end "{{ dhcp_range_end }}"
+    pihole-FTL --config dhcp.router "{{ wifi_gateway }}"
+  changed_when: false
+  ignore_errors: yes
+
+- name: Restart Pi-hole FTL to apply settings
+  systemd:
+    name: pihole-FTL
+    state: restarted
+    enabled: yes

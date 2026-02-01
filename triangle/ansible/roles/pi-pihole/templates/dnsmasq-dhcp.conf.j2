@@ -1,0 +1,10 @@
+interface={{ wifi_interface }}
+bind-interfaces
+listen-address={{ wifi_gateway }}
+dhcp-range={{ dhcp_range_start }},{{ dhcp_range_end }},{{ home_netmask }},{{ dhcp_lease_time }}
+dhcp-option=3,{{ wifi_gateway }}
+dhcp-option=6,{{ wifi_gateway }}
+dhcp-authoritative
+log-dhcp
+domain-needed
+bogus-priv

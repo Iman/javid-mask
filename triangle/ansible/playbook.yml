@@ -1,0 +1,196 @@
+---
+# Triangle Architecture Deployment
+# VPS: Native WireGuard Server (3x-UI optional for VLESS/VMess)
+# Raspberry Pi: Pi-hole DNS + Firewall + WiFi AP + WireGuard Client
+#
+# WireGuard client config saved to: ../wireguard-client.conf
+
+- name: Deploy WireGuard VPN Server on VPS
+  hosts: proxy_server
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Display VPS information
+      debug:
+        msg:
+          - "Deploying to VPS: {{ ansible_host }}"
+          - "WireGuard Port: {{ wireguard_port }}"
+          - "Health Check Port: {{ xui_health_check_port }}"
+
+  roles:
+    - vps-prerequisites
+    - role: vps-wireguard
+      when: wireguard_enabled | default(true)
+    - role: vps-3x-ui
+      when: xui_enabled | default(true)
+    - role: vps-cloudflared
+      when: vps_cloudflared_enabled | default(false)
+    - role: vps-pihole
+      when: vps_pihole_enabled | default(false)
+    - vps-firewall
+    - vps-health-endpoint
+
+  post_tasks:
+    - name: Display VPS deployment summary
+      debug:
+        msg:
+          - "=========================================="
+          - "VPS Deployment Complete!"
+          - "=========================================="
+          - "WireGuard Server: {{ vps_ip }}:{{ wireguard_port }}"
+          - "WireGuard Address: {{ wireguard_server_address }}"
+          - "Pi-hole DNS: 10.0.0.1 (for direct clients)"
+          - ""
+          - "Client Configs (in triangle folder):"
+          - "  - wireguard-pi-client.conf (for Raspberry Pi)"
+          - "  - wireguard-direct-client.conf (for Mobile/Laptop)"
+          - ""
+          - "Import wireguard-direct-client.conf on your phone's WireGuard app"
+          - "=========================================="
+
+- name: Deploy Local Gateway on Raspberry Pi
+  hosts: local_gateway
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Create credentials file header
+      lineinfile:
+        path: "{{ credentials_file }}"
+        line: "=== Triangle Architecture Credentials ==="
+        create: yes
+        mode: '0600'
+      delegate_to: localhost
+      run_once: true
+      become: no
+
+    - name: Record deployment timestamp
+      lineinfile:
+        path: "{{ credentials_file }}"
+        line: "Deployment Date: {{ ansible_facts.date_time.iso8601 }}"
+        insertafter: EOF
+      delegate_to: localhost
+      run_once: true
+      become: no
+
+    - name: Display Raspberry Pi information
+      debug:
+        msg:
+          - "Deploying to Raspberry Pi: {{ ansible_host }}"
+          - "Hostname: {{ pi_hostname }}"
+          - "WiFi Gateway: {{ wifi_gateway }}"
+          - "Home Network: {{ home_network }}"
+
+  roles:
+    - pi-prerequisites
+    - pi-network
+    - pi-hostapd
+    - pi-pihole
+    - role: pi-wireguard
+      when: wireguard_enabled | default(true)
+    - pi-firewall
+    - pi-health-check
+
+  post_tasks:
+    - name: Get WiFi SSID
+      shell: grep '^ssid=' /etc/hostapd/hostapd.conf | cut -d'=' -f2
+      register: actual_wifi_ssid
+      ignore_errors: yes
+
+    - name: Get WiFi password
+      shell: grep '^wpa_passphrase=' /etc/hostapd/hostapd.conf | cut -d'=' -f2
+      register: actual_wifi_password
+      ignore_errors: yes
+
+    - name: Write credentials file
+      copy:
+        dest: "{{ credentials_file }}"
+        mode: '0600'
+        content: |
+          ===============================================
+            TRIANGLE ARCHITECTURE - CREDENTIALS
+          ===============================================
+
+          Deployment Date: {{ ansible_facts.date_time.iso8601 }}
+
+          ===============================================
+            VPS PROXY SERVER (Native WireGuard)
+          ===============================================
+
+          IP Address: {{ vps_ip }}
+
+          WireGuard Server:
+            Port: {{ wireguard_port }}
+            Server Address: {{ wireguard_server_address }}
+            Public Key: {{ wireguard_server_public_key }}
+
+          3x-UI Management Panel (optional):
+            URL: http://{{ vps_ip }}:{{ xui_port }}/
+            Username: {{ xui_admin_username }}
+            Password: {{ xui_admin_password }}
+
+          Health Check:
+            URL: http://{{ vps_ip }}:{{ xui_health_check_port }}/health
+
+
+          ===============================================
+            RASPBERRY PI GATEWAY
+          ===============================================
+
+          IP Address: {{ pi_ip }}
+          Hostname: {{ pi_hostname }}
+
+          WiFi Access Point:
+            SSID: {{ actual_wifi_ssid.stdout | default(wifi_ssid) }}
+            Password: {{ actual_wifi_password.stdout | default(wifi_password) }}
+            Security: WPA2-PSK
+            Gateway: {{ wifi_gateway }}
+            DHCP Range: {{ dhcp_range_start }} - {{ dhcp_range_end }}
+
+          Pi-hole DNS:
+            Web Interface: http://{{ wifi_gateway }}/admin
+            Password: {{ pihole_web_password }}
+
+          WireGuard Client:
+            Interface: wg0
+            Address: {{ wireguard_pi_address }}
+            Endpoint: {{ vps_ip }}:{{ wireguard_port }}
+
+
+          ===============================================
+            SERVICE COMMANDS
+          ===============================================
+
+          Raspberry Pi (SSH admin@{{ pi_ip }}):
+            sudo systemctl status hostapd
+            sudo systemctl status pihole-FTL
+            sudo systemctl status wg-quick@wg0
+            sudo wg show wg0
+            sudo /usr/local/bin/health-status.sh
+
+
+          ===============================================
+            QUICK REFERENCE
+          ===============================================
+
+          3x-UI: http://{{ vps_ip }}:{{ xui_port }}/ ({{ xui_admin_username }}/{{ xui_admin_password }})
+          Pi-hole: http://{{ wifi_gateway }}/admin
+          WiFi: {{ actual_wifi_ssid.stdout | default(wifi_ssid) }} / {{ actual_wifi_password.stdout | default(wifi_password) }}
+
+      delegate_to: localhost
+      run_once: true
+      become: no
+
+    - name: Display completion message
+      debug:
+        msg:
+          - "=========================================="
+          - "Triangle Architecture Deployment Complete!"
+          - "=========================================="
+          - "WireGuard VPN: {{ vps_ip }}:{{ wireguard_port }}"
+          - "Pi-hole: http://{{ wifi_gateway }}/admin"
+          - "WiFi SSID: {{ actual_wifi_ssid.stdout | default(wifi_ssid) }}"
+          - "WiFi Password: {{ actual_wifi_password.stdout | default(wifi_password) }}"
+          - "Credentials: {{ credentials_file }}"
+          - "=========================================="
